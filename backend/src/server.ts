@@ -12,4 +12,6 @@ server.get("/status", (req, res) => {
   res.sendStatus(200);
 });
 
-server.listen(process.env.PORT, '0.0.0.0', () => console.log(`Listening to PORT ${process.env.PORT}`));
+const port = process.env.PORT ? parseInt(process.env.PORT) : 5000;
+
+server.listen(port, '0.0.0.0', () => console.log(`Listening to PORT ${port}`));
