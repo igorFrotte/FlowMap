@@ -5,6 +5,8 @@ backend/node_modules/
 
 # Environment files
 *.env
+frontend/.env
+backend/.env
 
 # Build outputs
 frontend/dist/
