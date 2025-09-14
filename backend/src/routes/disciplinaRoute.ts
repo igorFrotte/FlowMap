@@ -3,6 +3,6 @@ import { disciplinasDoAluno } from '../controllers/disciplinaController.js';
 
 const router = Router();
 
-router.get('/disciplinas', disciplinasDoAluno);
+router.get('/disciplinas/:alunoId', disciplinasDoAluno);
 
 export default router;

@@ -1,7 +1,7 @@
 import prisma from '../prisma/client.js';
 
 export const disciplinasRepository = {
-  async findAllWithDeps(idAluno : number) {
+  async disciplinasComDependenciasDoAluno(idAluno : number) {
     return prisma.aluno_disciplina.findMany({
       where: {
         idaluno: idAluno

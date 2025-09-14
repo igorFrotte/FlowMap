@@ -1,8 +1,8 @@
 import { disciplinasRepository } from '../repositories/disciplinaRepository.js';
 import type { DisciplinaComDeps } from '../types/disciplina.js';
 
-export async function getDisciplinasComDeps(): Promise<DisciplinaComDeps[]> {
-  const disciplinas = await disciplinasRepository.findAllWithDeps(1);
+export async function disciplinasComDepsDoAluno(alunoId : number): Promise<DisciplinaComDeps[]> {
+  const disciplinas = await disciplinasRepository.disciplinasComDependenciasDoAluno(alunoId);
 
   return disciplinas.map(d => ({
     id: d.disciplina.id,
