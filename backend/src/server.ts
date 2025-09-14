@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import prisma from "./db/db.js";
+import disciplinaRouter from "./routes/disciplinaRoute.js";
 
 dotenv.config();
 
@@ -9,9 +9,9 @@ const server = express();
 server.use(express.json());
 server.use(cors());
 
-server.get("/status", async (req, res) => {
-  const users = await prisma.aluno.findMany();
-  console.log(users);
+server.use(disciplinaRouter);
+
+server.get("/status", (req, res) => {
   res.sendStatus(200);
 });
 
