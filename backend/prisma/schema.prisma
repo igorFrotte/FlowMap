@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model administrador {
+  id    Int     @id @default(autoincrement())
+  nome  String  @db.VarChar(255)
+  email String  @unique @db.VarChar(255)
+  senha String  @db.VarChar(255)
+  curso curso[]
+}
+
+model aluno {
+  id               Int                @id @default(autoincrement())
+  idcurso          Int
+  nome             String             @db.VarChar(255)
+  email            String             @unique @db.VarChar(255)
+  senha            String             @db.VarChar(255)
+  curso            curso              @relation(fields: [idcurso], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  aluno_disciplina aluno_disciplina[]
+}
+
+model aluno_disciplina {
+  id           Int        @id @default(autoincrement())
+  idaluno      Int
+  iddisciplina Int
+  aprovado     Boolean?   @default(false)
+  periodoplan  Int?
+  aluno        aluno      @relation(fields: [idaluno], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  disciplina   disciplina @relation(fields: [iddisciplina], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model curso {
+  id             Int           @id @default(autoincrement())
+  idadm          Int
+  iduniversidade Int
+  nome           String        @db.VarChar(255)
+  nperiodos      Int
+  aluno          aluno[]
+  administrador  administrador @relation(fields: [idadm], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  universidade   universidade  @relation(fields: [iduniversidade], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  disciplina     disciplina[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model dependencia {
+  id                                                 Int        @id @default(autoincrement())
+  iddisciplinareq                                    Int
+  iddisciplinadep                                    Int
+  disciplina_dependencia_iddisciplinadepTodisciplina disciplina @relation("dependencia_iddisciplinadepTodisciplina", fields: [iddisciplinadep], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  disciplina_dependencia_iddisciplinareqTodisciplina disciplina @relation("dependencia_iddisciplinareqTodisciplina", fields: [iddisciplinareq], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model disciplina {
+  id                                                  Int                @id @default(autoincrement())
+  idcurso                                             Int
+  nome                                                String             @db.VarChar(255)
+  periodo                                             Int
+  credito                                             Int
+  dificuldade                                         Int?
+  informacao                                          String?            @db.VarChar(255)
+  reqcreditos                                         Int?
+  aluno_disciplina                                    aluno_disciplina[]
+  dependencia_dependencia_iddisciplinadepTodisciplina dependencia[]      @relation("dependencia_iddisciplinadepTodisciplina")
+  dependencia_dependencia_iddisciplinareqTodisciplina dependencia[]      @relation("dependencia_iddisciplinareqTodisciplina")
+  curso                                               curso              @relation(fields: [idcurso], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model universidade {
+  id    Int     @id @default(autoincrement())
+  nome  String  @db.VarChar(255)
+  curso curso[]
+}
