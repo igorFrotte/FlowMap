@@ -1,11 +1,10 @@
 import prisma from '../prisma/client.js';
 
-export const disciplinasRepository = {
-  async disciplinasComDependenciasDoAluno(idAluno : number) {
+const disciplinaRepository = {
+  
+  disciplinasComDependenciasDoAluno: async (idAluno : number) => {
     return prisma.aluno_disciplina.findMany({
-      where: {
-        idaluno: idAluno
-      },
+      where: { idaluno: idAluno },
       include: {
         disciplina : {
           include: {
@@ -15,5 +14,27 @@ export const disciplinasRepository = {
         }
       }
     });
+  },
+
+  updateDisciplinasAprovadasDoAluno: async (idAluno: number, idsDisciplinas: number[], aprovado: boolean) => {
+    return prisma.aluno_disciplina.updateMany({
+      where: {
+        idaluno: idAluno,
+        iddisciplina: { in: idsDisciplinas }
+      },
+      data: { aprovado }
+    })
+  }, 
+
+  updateDisciplinasPeriodoPlanDoAluno: async (idAluno: number, idsDisciplinas: number[], periodoPlan: number) => {
+    return prisma.aluno_disciplina.updateMany({
+      where: {
+        idaluno: idAluno,
+        iddisciplina: { in: idsDisciplinas }
+      },
+      data: { periodoplan: periodoPlan }
+    })
   }
 };
+
+export default disciplinaRepository;

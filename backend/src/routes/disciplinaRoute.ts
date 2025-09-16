@@ -1,8 +1,10 @@
 import { Router } from 'express';
-import { disciplinasDoAluno } from '../controllers/disciplinaController.js';
+import disciplinaController from '../controllers/disciplinaController.js';
 
 const router = Router();
 
-router.get('/disciplinas/:alunoId', disciplinasDoAluno);
+router.get('/disciplinas/:alunoId', disciplinaController.disciplinasDoAluno);
+router.patch('/disciplinas/aprovadas', disciplinaController.updateAprovadas);
+router.patch('/disciplinas/periodoplan', disciplinaController.updatePeriodoPlan);
 
 export default router;

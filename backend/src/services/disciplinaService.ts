@@ -1,19 +1,34 @@
-import { disciplinasRepository } from '../repositories/disciplinaRepository.js';
+import disciplinaRepository from '../repositories/disciplinaRepository.js';
 import type { DisciplinaComDeps } from '../types/disciplina.js';
 
-export async function disciplinasComDepsDoAluno(alunoId : number): Promise<DisciplinaComDeps[]> {
-  const disciplinas = await disciplinasRepository.disciplinasComDependenciasDoAluno(alunoId);
+const disciplinaService = {
 
-  return disciplinas.map(d => ({
-    id: d.disciplina.id,
-    nome: d.disciplina.nome,
-    periodo: d.disciplina.periodo,
-    dificuldade: d.disciplina.dificuldade,
-    informacao: d.disciplina.informacao,
-    reqcreditos: d.disciplina.reqcreditos,
-    requisitos: d.disciplina.requisitos?.map(r => ({ id: r.req.id, nome: r.req.nome })) ?? [],
-    dependentes: d.disciplina.dependentes?.map(dep => ({ id: dep.dep.id, nome: dep.dep.nome })) ?? [],
-    aprovado: d.aprovado,
-    periodoplan: d.periodoplan
-  }));
+  disciplinasComDepsDoAluno: async (idAluno : number): Promise<DisciplinaComDeps[]> => {
+    const disciplinas = await disciplinaRepository.disciplinasComDependenciasDoAluno(idAluno);
+    return disciplinas.map(d => ({
+      id: d.disciplina.id,
+      nome: d.disciplina.nome,
+      periodo: d.disciplina.periodo,
+      dificuldade: d.disciplina.dificuldade,
+      informacao: d.disciplina.informacao,
+      reqcreditos: d.disciplina.reqcreditos,
+      requisitos: d.disciplina.requisitos?.map(r => ({ id: r.req.id, nome: r.req.nome })) ?? [],
+      dependentes: d.disciplina.dependentes?.map(dep => ({ id: dep.dep.id, nome: dep.dep.nome })) ?? [],
+      aprovado: d.aprovado,
+      periodoplan: d.periodoplan
+    }));
+  },
+
+  updateAprovadasDoAluno: async (idAluno: number, idsDisciplinas: number[], aprovado: boolean) => {
+    const result = await disciplinaRepository.updateDisciplinasAprovadasDoAluno(idAluno, idsDisciplinas, aprovado);
+    return result;
+  },
+
+  updatePeriodoPlanDoAluno: async (idAluno: number, idsDisciplinas: number[], periodoPlan: number) => {
+    const result = await disciplinaRepository.updateDisciplinasPeriodoPlanDoAluno(idAluno, idsDisciplinas, periodoPlan);
+    return result; 
+  }
+
 };
+
+export default disciplinaService;
