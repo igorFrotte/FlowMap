@@ -4,11 +4,7 @@ import { useEffect, useState } from "react";
 import axiosService from "../services/axiosService.js";
 
 export default function Fluxograma() {
-
-  const [url, setUrl] = useState("");
-  const [req, setReq] = useState(null);
-  const [isReq, setIsReq] = useState(null);
-  const [free, setFree] = useState(false);
+  const [dependencias, setDependencias] = useState([]);
   const [disciplinas,setDisciplinas] = useState([]);
 
   useEffect(() => {
@@ -40,15 +36,6 @@ export default function Fluxograma() {
   subjects[39][7] = "Requer 1440hrs cursadas";
   subjects[40][7] = "Requer 1440hrs cursadas";
 
-  function completed( list ){
-    list.map( (e) => {
-      if(subjects[e]){
-        turnReady(e);
-      }
-      return 1; 
-    });
-  }
-
   function clearSubs( item, ind ){
     clearFree();
     if(item !== null){
@@ -59,30 +46,6 @@ export default function Fluxograma() {
         return 1;
       });
     }
-  }
-
-  function requires( list, sub ){
-    clearSubs(req, 2);
-    if(req !== sub){
-      list.map((e) => {
-        subjects[e][4] = "#d4d";
-        return 1;
-      });
-      setReq(sub);
-    } else setReq(null);
-    setSubjects([...subjects]);
-  }
-
-  function isRequired( list, sub ){
-    clearSubs(isReq, 3);
-    if(isReq !== sub){
-      list.map((e) => {
-        subjects[e][4] = "#dd4";
-        return 1;
-      });
-      setIsReq(sub);
-    } else setIsReq(null);
-    setSubjects([...subjects]);
   }
 
   function clearFree(){
@@ -126,17 +89,16 @@ export default function Fluxograma() {
     });
   }
 
-  function requisitosDaDisciplina(requisitos){
-    console.log(requisitos);
-    requisitos.map((d) => {
+  function dependenciasDaDisciplina(dep, tipo){
+    setDependencias([...dep]);
+    dep.map((d) => {
       let n = d.id.toString();
-      disciplinas[n]["borda"] = "#c849d3";
+      if(tipo == "requisitos")
+        disciplinas[n]["borda"] = "#c849d3";
+      else disciplinas[n]["borda"] = "#34c21b";
     });
-    setDisciplinas({...disciplinas});
-    console.log("opa");
+    //setDisciplinas({...disciplinas});
   }
-
-  function isRequired(){}
 
   function freeSubs(){}
   
@@ -147,7 +109,7 @@ export default function Fluxograma() {
         {disciplinasPorPeriodo().map((d,ind) => {       
           return <div key={ind}>
                       <div>{d[0].periodo}º Período</div>
-                      {d.map((dis,i) => <Disciplina click={disciplinaClicada} key={i} disciplina={dis} before={requisitosDaDisciplina} after={isRequired} />)}
+                      {d.map((dis,i) => <Disciplina click={disciplinaClicada} key={i} disciplina={dis} funcaoDependencia={dependenciasDaDisciplina} />)}
                   </div>;
         })}
       </Container> 

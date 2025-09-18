@@ -1,13 +1,13 @@
 import styled from "styled-components";
 
-export default function Subject( {disciplina, click, before, after} ) {
+export default function Subject( {disciplina, click, funcaoDependencia} ) {
 
   return (
     <Container>
-      {disciplina.requisitos.length? <p className="before" onClick={() => before(disciplina.requisitos)}>{"<-"}</p>: ""}
-      {disciplina.dependentes.length? <p className="after" onClick={() => after()}>{"->"}</p> : ""}
+      {disciplina.requisitos.length? <p className="before" onClick={() => funcaoDependencia(disciplina.requisitos, "requisitos")}>{"<-"}</p>: ""}
+      {disciplina.dependentes.length? <p className="after" onClick={() => funcaoDependencia(disciplina.dependentes, "dependentes")}>{"->"}</p> : ""}
       {disciplina.informacao? <p className="desc" onClick={() => alert(disciplina.informacao)}>{"i"}</p> : ""}
-      <Sub onClick={() => click(disciplina.id)} borda={disciplina.borda} $aprovado={disciplina.aprovado}>
+      <Sub onClick={() => click(disciplina.id)} $borda={disciplina.borda} $aprovado={disciplina.aprovado}>
         {disciplina.nome}
       </Sub>
     </Container> 
@@ -15,7 +15,7 @@ export default function Subject( {disciplina, click, before, after} ) {
 }
 
 const Sub = styled.div`
-  border: 2px ${props => (props.borda? props.borda : "black")} solid;
+  border: 2px ${props => (props.$borda? props.$borda : "black")} solid;
   padding: 5px;
   border-radius: 10px;
   width: 150px;
