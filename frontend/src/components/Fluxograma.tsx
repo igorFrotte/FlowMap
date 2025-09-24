@@ -1,11 +1,30 @@
 import { styled } from "styled-components";
 import Disciplina from "./Disciplina";
 import { useEffect, useState } from "react";
-import axiosService from "../services/axiosService.js";
+import axiosService from "../services/axiosService";
+
+interface Disciplina {
+  id: number;
+  nome: string;
+  periodo: number;
+  dificuldade?: string | null;
+  informacao?: string | null;
+  reqcreditos?: number | null;
+  requisitos: { id: number; nome: string }[];
+  dependentes: { id: number; nome: string }[];
+  aprovado: boolean;
+  periodoplan?: number | null;
+  borda?: string;
+}
+
+interface Dependencia {
+  id: number;
+  nome: string;
+}
 
 export default function Fluxograma() {
-  const [dependencias, setDependencias] = useState([]);
-  const [disciplinas,setDisciplinas] = useState([]);
+  const [dependencias, setDependencias] = useState<Dependencia[]>([]);
+  const [disciplinas,setDisciplinas] = useState<Record<string, Disciplina>>({});
 
   useEffect(() => {
     const promise = axiosService.mostrarDisciplinasDoAluno();
@@ -29,82 +48,44 @@ export default function Fluxograma() {
     return obj;
   }
 
-  /*
-  subjects[11][7] = "Correquisito de Circuitos Digitais";
-  subjects[21][7] = "Correquisito de Física 3 - A";
-  subjects[38][7] = "Requer 1440hrs cursadas";
-  subjects[39][7] = "Requer 1440hrs cursadas";
-  subjects[40][7] = "Requer 1440hrs cursadas";
-
-  function clearSubs( item, ind ){
-    clearFree();
-    if(item !== null){
-      subjects[item][ind].map((e) => {
-        if(subjects[e][5] === 1)
-          subjects[e][4] = "#ddd";
-        else subjects[e][4] = "#fff";
-        return 1;
-      });
-    }
-  }
-
-  function clearFree(){
-    subjects.map((e) => {
-      if(e[4] === "#4dd"){
-        if(e[5])
-          e[4] = "#ddd";
-        else e[4] = "#fff";
-      }
-      return 1;
-    });
-  }
-
-  function freeSubs(){
-    clearSubs(req, 2);
-    clearSubs(isReq, 3);
-    if(!free){
-      subjects.map((e, i) => {
-        let ready = e[2].filter((el) => subjects[el][5] === 0);
-        if(ready.length === 0 && e[5] === 0)
-          e[4] = "#4dd";
-        return 1;
-      });
-    }
-    setFree(!free);
-    setSubjects([...subjects]);
-    return 1;
-  } */
-
-  function disciplinaClicada(id){
+  function disciplinaClicada(id : number){
     disciplinas[id].aprovado = !disciplinas[id].aprovado;
     if(disciplinas[id].aprovado)
       recursivamenteAprovado(id);
     setDisciplinas({...disciplinas});
   }
 
-  function recursivamenteAprovado(id){
+  function recursivamenteAprovado(id : number){
     disciplinas[id].requisitos.map((d) => {
       disciplinas[d.id].aprovado = true;
       recursivamenteAprovado(d.id);
     });
   }
 
-  function dependenciasDaDisciplina(dep, tipo){
-    setDependencias([...dep]);
-    dep.map((d) => {
-      let n = d.id.toString();
-      if(tipo == "requisitos")
-        disciplinas[n]["borda"] = "#c849d3";
-      else disciplinas[n]["borda"] = "#34c21b";
+  function dependenciasDaDisciplina(dep : Dependencia[], tipo: "requisitos" | "dependentes"){
+
+    dependencias.map( (d) => {
+      let n : string = d.id.toString();
+      disciplinas[n].borda = "";
     });
-    //setDisciplinas({...disciplinas});
+
+    if(JSON.stringify(dependencias) === JSON.stringify(dep)){
+      setDependencias([]);
+      return;
+    }
+
+    dep.map((d) => {
+      let n : string = d.id.toString();
+      disciplinas[n].borda = tipo === "requisitos" ? "reqs" : "deps";
+    });
+    setDependencias([...dep]);
   }
 
   function freeSubs(){}
   
   return (
     <>
-      iniciando
+      iniciando TSX
       <Container>
         {disciplinasPorPeriodo().map((d,ind) => {       
           return <div key={ind}>

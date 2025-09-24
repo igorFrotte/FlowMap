@@ -4,13 +4,13 @@ const BASE_URL = "http://localhost:5000/"; //mudar
 
 const axiosService = {
 
-    createHeader: () => {
+    /* createHeader: () => {
         const auth = JSON.parse(localStorage.getItem("FlowMap"));
         const config = {
           headers: { Authorization: `Bearer ${auth.token}` }
         };
         return config;
-    },
+    }, */
     
     mostrarDisciplinasDoAluno: () => {
         //const header = createHeader();
