@@ -6,6 +6,7 @@ import {
   useDroppable,
   DragEndEvent,
 } from "@dnd-kit/core";
+import axiosService from "../services/axiosService";
 
 interface Disciplina {
   id: number;
@@ -21,28 +22,40 @@ interface Disciplina {
   borda?: string;
 }
 
-interface PlanejadorProps {
-  dadosBackend: Record<string, Disciplina>;
-}
-
 /* ------------------ ITEM ARRASTÁVEL ------------------ */
-function DraggableItem({ id, children }: { id: string; children: React.ReactNode }) {
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({ id });
+function DraggableItem({
+  id,
+  children,
+  disabled = false,
+}: {
+  id: string;
+  children: React.ReactNode;
+  disabled?: boolean;
+}) {
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+    id,
+    disabled,
+  });
 
   const style: React.CSSProperties = {
     padding: "8px",
     margin: "4px",
-    background: "#eee",
+    background: disabled ? "#ddd" : "#eee",
     border: "1px solid #aaa",
     borderRadius: "8px",
-    cursor: "grab",
-    transform: transform
-      ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
-      : undefined,
+    cursor: disabled ? "not-allowed" : "grab",
+    transform:
+      !disabled && transform
+        ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
+        : undefined,
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...(!disabled ? { ...listeners, ...attributes } : {})}
+    >
       {children}
     </div>
   );
@@ -82,17 +95,26 @@ function DroppableColumn({
 }
 
 /* ------------------ COMPONENTE PRINCIPAL ------------------ */
-export default function Planejador({ dadosBackend }: PlanejadorProps) {
-  const disciplinas: Disciplina[] = Object.values(dadosBackend);
-
+export default function Planejador() {
   const [backlog, setBacklog] = useState<Disciplina[]>([]);
   const [plan, setPlan] = useState<Disciplina[][]>([[]]);
   const [bloqueados, setBloqueados] = useState<boolean[]>([false]);
+  const [disciplinas, setDisciplinas] = useState<Record<string, Disciplina>>(
+    {}
+  );
 
   /* Inicializa backlog com disciplinas sem requisitos */
   useEffect(() => {
-    const iniciais = disciplinas.filter((d) => d.requisitos.length === 0);
-    setBacklog(iniciais);
+    const promise = axiosService.mostrarDisciplinasDoAluno();
+    promise
+      .then((r) => {
+        setDisciplinas(r.data);
+        const iniciais = (Object.values(r.data) as Disciplina[]).filter(
+          (d) => d.requisitos.length === 0
+        );
+        setBacklog(iniciais);
+      })
+      .catch((e) => console.log(e.message));
   }, []);
 
   /* Função de drag & drop */
@@ -121,7 +143,8 @@ export default function Planejador({ dadosBackend }: PlanejadorProps) {
     const parseOver = (id: string) => {
       if (id === "backlog") return { type: "backlog" as const };
       const mPeriod = id.match(/^periodo-(\d+)(?:-\d+)?$/);
-      if (mPeriod) return { type: "periodo" as const, periodoIndex: Number(mPeriod[1]) };
+      if (mPeriod)
+        return { type: "periodo" as const, periodoIndex: Number(mPeriod[1]) };
       return { type: "unknown" as const };
     };
 
@@ -140,6 +163,9 @@ export default function Planejador({ dadosBackend }: PlanejadorProps) {
 
     // Bloqueio do período: impede drop
     if (dest.type === "periodo" && bloqueados[dest.periodoIndex]) return;
+
+    // Bloqueio de retirada: impede arrastar de período bloqueado
+    if (src.from === "periodo" && bloqueados[src.periodoIndex]) return;
 
     // clona estados
     let newBacklog = [...backlog];
@@ -182,7 +208,9 @@ export default function Planejador({ dadosBackend }: PlanejadorProps) {
 
     // Atualiza backlog: inclui disciplinas cujo pré-requisito já está no plano
     const disciplinasAlocadasIds = plan.flat().map((d) => d.id);
-    const novasDisciplinas = disciplinas.filter(
+    const novasDisciplinas = (Object.values(
+      disciplinas
+    ) as Disciplina[]).filter(
       (d) =>
         !disciplinasAlocadasIds.includes(d.id) &&
         d.requisitos.every((r) => disciplinasAlocadasIds.includes(r.id))
@@ -201,7 +229,7 @@ export default function Planejador({ dadosBackend }: PlanejadorProps) {
         <DroppableColumn id="backlog" title="Backlog">
           {backlog.map((d) => (
             <DraggableItem key={d.id} id={`backlog-${d.id}`}>
-              {d.nome}
+              {d.nome + "|       | " + d.periodo}
             </DraggableItem>
           ))}
         </DroppableColumn>
@@ -215,8 +243,12 @@ export default function Planejador({ dadosBackend }: PlanejadorProps) {
             disabled={bloqueados[idx]}
           >
             {periodo.map((d) => (
-              <DraggableItem key={d.id} id={`periodo-${idx}-${d.id}`}>
-                {d.nome}
+              <DraggableItem
+                key={d.id}
+                id={`periodo-${idx}-${d.id}`}
+                disabled={bloqueados[idx]} // 🔒 não arrasta se bloqueado
+              >
+                {d.nome + "|       | " + d.periodo}
               </DraggableItem>
             ))}
           </DroppableColumn>
