@@ -2,6 +2,7 @@ import { styled } from "styled-components";
 import Disciplina from "./Disciplina";
 import { useEffect, useState } from "react";
 import axiosService from "../services/axiosService";
+import Planejador from "./Planejador";
 
 interface Disciplina {
   id: number;
@@ -99,6 +100,10 @@ export default function Fluxograma() {
           <button onClick={() => freeSubs()}>Livres</button>
         </div>
       </Menu>
+
+      {Object.keys(disciplinas).length > 0 && (
+        <Planejador dadosBackend={disciplinas} />
+      )}
     </>
   );
 }
