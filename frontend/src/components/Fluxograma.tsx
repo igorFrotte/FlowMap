@@ -22,6 +22,12 @@ interface Dependencia {
   nome: string;
 }
 
+interface ObjetoAprovado {
+  idAluno: number;
+  idsDisciplinas: number[];
+  aprovado: boolean;
+}
+
 export default function Fluxograma() {
   const [dependencias, setDependencias] = useState<Dependencia[]>([]);
   const [disciplinas,setDisciplinas] = useState<Record<string, Disciplina>>({});
@@ -49,21 +55,29 @@ export default function Fluxograma() {
   }
 
   function disciplinaClicada(id : number){
+    const obj = {
+      idAluno: 1, //mudar #########################################################
+      idsDisciplinas: [id],
+      aprovado: !disciplinas[id].aprovado
+    };
     disciplinas[id].aprovado = !disciplinas[id].aprovado;
     if(disciplinas[id].aprovado)
-      recursivamenteAprovado(id);
-    setDisciplinas({...disciplinas});
+      recursivamenteAprovado(id, obj);
+    const promise = axiosService.mudarAprovacao(obj);
+        promise
+            .then(() => setDisciplinas({...disciplinas}))
+            .catch(e => console.log(e.message));
   }
 
-  function recursivamenteAprovado(id : number){
+  function recursivamenteAprovado(id : number, obj : ObjetoAprovado){
     disciplinas[id].requisitos.map((d) => {
       disciplinas[d.id].aprovado = true;
-      recursivamenteAprovado(d.id);
+      obj.idsDisciplinas.push(d.id);
+      recursivamenteAprovado(d.id, obj);
     });
   }
 
   function dependenciasDaDisciplina(dep : Dependencia[], tipo: "requisitos" | "dependentes"){
-
     dependencias.map( (d) => {
       let n : string = d.id.toString();
       disciplinas[n].borda = "";

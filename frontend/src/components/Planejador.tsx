@@ -43,7 +43,7 @@ function DraggableItem({
     background: disabled ? "#ddd" : "#eee",
     border: "1px solid #aaa",
     borderRadius: "8px",
-    cursor: disabled ? "not-allowed" : "grab",
+    cursor: disabled ? "pointer" : "grab",
     transform:
       !disabled && transform
         ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
@@ -97,6 +97,7 @@ function DroppableColumn({
 /* ------------------ COMPONENTE PRINCIPAL ------------------ */
 export default function Planejador() {
   const [backlog, setBacklog] = useState<Disciplina[]>([]);
+  const [backlogTotal, setBacklogTotal] = useState<Disciplina[]>([]);
   const [plan, setPlan] = useState<Disciplina[][]>([[]]);
   const [bloqueados, setBloqueados] = useState<boolean[]>([false]);
   const [disciplinas, setDisciplinas] = useState<Record<string, Disciplina>>(
@@ -109,10 +110,14 @@ export default function Planejador() {
     promise
       .then((r) => {
         setDisciplinas(r.data);
-        const iniciais = (Object.values(r.data) as Disciplina[]).filter(
-          (d) => d.requisitos.length === 0
-        );
+
+        const todas = Object.values(r.data) as Disciplina[];
+
+        const iniciais = todas.filter((d) => d.requisitos.length === 0);
+        const bloqueadas = todas.filter((d) => d.requisitos.length > 0);
+
         setBacklog(iniciais);
+        setBacklogTotal(bloqueadas);
       })
       .catch((e) => console.log(e.message));
   }, []);
@@ -152,7 +157,6 @@ export default function Planejador() {
     const dest = parseOver(overId);
     if (!src || dest.type === "unknown") return;
 
-    // se não mudou de container
     if (src.from === "backlog" && dest.type === "backlog") return;
     if (
       src.from === "periodo" &&
@@ -161,17 +165,12 @@ export default function Planejador() {
     )
       return;
 
-    // Bloqueio do período: impede drop
     if (dest.type === "periodo" && bloqueados[dest.periodoIndex]) return;
-
-    // Bloqueio de retirada: impede arrastar de período bloqueado
     if (src.from === "periodo" && bloqueados[src.periodoIndex]) return;
 
-    // clona estados
     let newBacklog = [...backlog];
     let newPlan = plan.map((p) => [...p]);
 
-    // pega e remove o item da origem
     let item: Disciplina | undefined;
     if (src.from === "backlog") {
       item = newBacklog.find((d) => d.id === src.itemId);
@@ -184,7 +183,6 @@ export default function Planejador() {
 
     if (!item) return;
 
-    // insere no destino
     if (dest.type === "backlog") {
       newBacklog.push(item);
     } else {
@@ -201,13 +199,12 @@ export default function Planejador() {
   const addPeriodo = () => {
     const lastIdx = plan.length - 1;
 
-    // Bloqueia o último período
     const newBloqueados = [...bloqueados];
     newBloqueados[lastIdx] = true;
     setBloqueados(newBloqueados);
 
-    // Atualiza backlog: inclui disciplinas cujo pré-requisito já está no plano
     const disciplinasAlocadasIds = plan.flat().map((d) => d.id);
+
     const novasDisciplinas = (Object.values(
       disciplinas
     ) as Disciplina[]).filter(
@@ -215,9 +212,16 @@ export default function Planejador() {
         !disciplinasAlocadasIds.includes(d.id) &&
         d.requisitos.every((r) => disciplinasAlocadasIds.includes(r.id))
     );
+
     setBacklog(novasDisciplinas);
 
-    // Adiciona novo período vazio
+    const bloqueadas = (Object.values(disciplinas) as Disciplina[]).filter(
+      (d) =>
+        !disciplinasAlocadasIds.includes(d.id) &&
+        !d.requisitos.every((r) => disciplinasAlocadasIds.includes(r.id))
+    );
+    setBacklogTotal(bloqueadas);
+
     setPlan([...plan, []]);
     setBloqueados([...newBloqueados, false]);
   };
@@ -225,6 +229,17 @@ export default function Planejador() {
   return (
     <div style={{ display: "flex", flexWrap: "wrap" }}>
       <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        {/* Backlog Total */}
+        <DroppableColumn id="backlog-total" title="Backlog Total" disabled>
+          {backlogTotal.map((d) => (
+            <DraggableItem key={d.id} id={`block-${d.id}`} disabled>
+              <span title={"Requisitos: " + d.requisitos.map((r) => r.nome).join(", ")}>
+                {d.nome + "|       | " + d.periodo}
+              </span>
+            </DraggableItem>
+          ))}
+        </DroppableColumn>
+
         {/* Backlog */}
         <DroppableColumn id="backlog" title="Backlog">
           {backlog.map((d) => (
@@ -246,7 +261,7 @@ export default function Planejador() {
               <DraggableItem
                 key={d.id}
                 id={`periodo-${idx}-${d.id}`}
-                disabled={bloqueados[idx]} // 🔒 não arrasta se bloqueado
+                disabled={bloqueados[idx]}
               >
                 {d.nome + "|       | " + d.periodo}
               </DraggableItem>
