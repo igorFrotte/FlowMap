@@ -104,17 +104,30 @@ export default function Planejador() {
     {}
   );
 
-  /* Inicializa backlog com disciplinas sem requisitos */
+  /* Inicializa backlog considerando disciplinas aprovadas como pré-requisitos cumpridos */
   useEffect(() => {
-    const promise = axiosService.mostrarDisciplinasDoAluno();
-    promise
+    axiosService
+      .mostrarDisciplinasDoAluno()
       .then((r) => {
         setDisciplinas(r.data);
 
         const todas = Object.values(r.data) as Disciplina[];
 
-        const iniciais = todas.filter((d) => d.requisitos.length === 0);
-        const bloqueadas = todas.filter((d) => d.requisitos.length > 0);
+        // Lista de IDs de disciplinas aprovadas (pré-requisitos cumpridos)
+        const aprovadasIds = todas.filter(d => d.aprovado).map(d => d.id);
+
+        // Filtra apenas disciplinas não aprovadas
+        const naoAprovadas = todas.filter(d => !d.aprovado);
+
+        // Disciplinas que podem ser cursadas: requisitos todos cumpridos
+        const iniciais = naoAprovadas.filter(d =>
+          d.requisitos.every(r => aprovadasIds.includes(r.id))
+        );
+
+        // Disciplinas bloqueadas: requisitos ainda não cumpridos
+        const bloqueadas = naoAprovadas.filter(d =>
+          !d.requisitos.every(r => aprovadasIds.includes(r.id))
+        );
 
         setBacklog(iniciais);
         setBacklogTotal(bloqueadas);
@@ -148,8 +161,7 @@ export default function Planejador() {
     const parseOver = (id: string) => {
       if (id === "backlog") return { type: "backlog" as const };
       const mPeriod = id.match(/^periodo-(\d+)(?:-\d+)?$/);
-      if (mPeriod)
-        return { type: "periodo" as const, periodoIndex: Number(mPeriod[1]) };
+      if (mPeriod) return { type: "periodo" as const, periodoIndex: Number(mPeriod[1]) };
       return { type: "unknown" as const };
     };
 
@@ -158,12 +170,7 @@ export default function Planejador() {
     if (!src || dest.type === "unknown") return;
 
     if (src.from === "backlog" && dest.type === "backlog") return;
-    if (
-      src.from === "periodo" &&
-      dest.type === "periodo" &&
-      src.periodoIndex === dest.periodoIndex
-    )
-      return;
+    if (src.from === "periodo" && dest.type === "periodo" && src.periodoIndex === dest.periodoIndex) return;
 
     if (dest.type === "periodo" && bloqueados[dest.periodoIndex]) return;
     if (src.from === "periodo" && bloqueados[src.periodoIndex]) return;
@@ -203,22 +210,26 @@ export default function Planejador() {
     newBloqueados[lastIdx] = true;
     setBloqueados(newBloqueados);
 
-    const disciplinasAlocadasIds = plan.flat().map((d) => d.id);
+    // IDs de disciplinas aprovadas + já alocadas no plano
+    const disciplinasAlocadasIds = plan.flat().map(d => d.id);
+    const disciplinasCumpridasIds = [
+      ...disciplinasAlocadasIds,
+      ...Object.values(disciplinas).filter(d => d.aprovado).map(d => d.id)
+    ];
 
-    const novasDisciplinas = (Object.values(
-      disciplinas
-    ) as Disciplina[]).filter(
+    const todasNaoAprovadas = Object.values(disciplinas).filter(d => !d.aprovado) as Disciplina[];
+
+    const novasDisciplinas = todasNaoAprovadas.filter(
       (d) =>
         !disciplinasAlocadasIds.includes(d.id) &&
-        d.requisitos.every((r) => disciplinasAlocadasIds.includes(r.id))
+        d.requisitos.every(r => disciplinasCumpridasIds.includes(r.id))
     );
-
     setBacklog(novasDisciplinas);
 
-    const bloqueadas = (Object.values(disciplinas) as Disciplina[]).filter(
+    const bloqueadas = todasNaoAprovadas.filter(
       (d) =>
         !disciplinasAlocadasIds.includes(d.id) &&
-        !d.requisitos.every((r) => disciplinasAlocadasIds.includes(r.id))
+        !d.requisitos.every(r => disciplinasCumpridasIds.includes(r.id))
     );
     setBacklogTotal(bloqueadas);
 
@@ -233,8 +244,8 @@ export default function Planejador() {
         <DroppableColumn id="backlog-total" title="Backlog Total" disabled>
           {backlogTotal.map((d) => (
             <DraggableItem key={d.id} id={`block-${d.id}`} disabled>
-              <span title={"Requisitos: " + d.requisitos.map((r) => r.nome).join(", ")}>
-                {d.nome + "|       | " + d.periodo}
+              <span title={"Requisitos: " + d.requisitos.map(r => r.nome).join(", ")}>
+                {d.nome + " |       | " + d.periodo}
               </span>
             </DraggableItem>
           ))}
@@ -244,7 +255,7 @@ export default function Planejador() {
         <DroppableColumn id="backlog" title="Backlog">
           {backlog.map((d) => (
             <DraggableItem key={d.id} id={`backlog-${d.id}`}>
-              {d.nome + "|       | " + d.periodo}
+              {d.nome + " |       | " + d.periodo}
             </DraggableItem>
           ))}
         </DroppableColumn>
@@ -263,7 +274,7 @@ export default function Planejador() {
                 id={`periodo-${idx}-${d.id}`}
                 disabled={bloqueados[idx]}
               >
-                {d.nome + "|       | " + d.periodo}
+                {d.nome + " |       | " + d.periodo}
               </DraggableItem>
             ))}
           </DroppableColumn>
