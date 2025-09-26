@@ -26,15 +26,21 @@ const disciplinaRepository = {
     })
   }, 
 
-  updateDisciplinasPeriodoPlanDoAluno: async (idAluno: number, idsDisciplinas: number[], periodoPlan: number) => {
-    return prisma.aluno_disciplina.updateMany({
-      where: {
-        idaluno: idAluno,
-        iddisciplina: { in: idsDisciplinas }
-      },
-      data: { periodoplan: periodoPlan }
-    })
+  updateDisciplinasPeriodoPlanDoAluno: async (periodos: {idAluno: number, idsDisciplinas: number[], periodoPlan: number}[]) => {
+    const updates = periodos.map(p =>
+      prisma.aluno_disciplina.updateMany({
+        where: {
+          idaluno: p.idAluno,
+          iddisciplina: { in: p.idsDisciplinas }
+        },
+        data: { periodoplan: p.periodoPlan }
+      })
+    );
+  
+    // Executa todos os updates em uma única transação
+    return prisma.$transaction(updates);
   }
+
 };
 
 export default disciplinaRepository;

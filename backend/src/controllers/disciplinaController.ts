@@ -2,7 +2,7 @@ import type { Request, Response } from 'express';
 import disciplinaService from '../services/disciplinaService.js';
 import { idSchema } from '../schemas/idSchema.js';
 import { STATUS_CODE } from '../enums/statusCode.js';
-import { aprovadasSchema, periodoPlanSchema } from '../schemas/disciplinaSchema.js';
+import { aprovadasSchema, periodoPlanArraySchema } from '../schemas/disciplinaSchema.js';
 
 const disciplinaController = {
 
@@ -34,12 +34,12 @@ const disciplinaController = {
   },
 
   updatePeriodoPlan: async (req: Request, res: Response) => {
-    const validacao = periodoPlanSchema.safeParse(req.body);
+    const validacao = periodoPlanArraySchema.safeParse(req.body);
     if (!validacao.success)
       return res.status(STATUS_CODE.BAD_REQUEST).json({ error: "Dados inválidos" });
     try {
-      const { idAluno, idsDisciplinas, periodoPlan } = validacao.data;
-      const result = await disciplinaService.updatePeriodoPlanDoAluno(idAluno, idsDisciplinas, periodoPlan);
+      const periodos = validacao.data;
+      const result = await disciplinaService.updatePeriodoPlanDoAluno(periodos);
       res.status(STATUS_CODE.OK).json(result);
     } catch (error) {
       console.error(error);

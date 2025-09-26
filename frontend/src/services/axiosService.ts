@@ -18,9 +18,15 @@ const axiosService = {
     return promise;
   },
 
-  mudarAprovacao: (body: any) => {
+  mudarAprovacao: (body: {idAluno: number, idsDisciplinas: number[], aprovado: boolean}) => {
     //const header = createHeader();
     const promise = axios.patch(BASE_URL + "disciplinas/aprovadas", body);
+    return promise;
+  },
+
+  mudarPlanejamento: (body: {idAluno: number, idsDisciplinas: number[], periodoPlan: number}[]) => {
+    //const header = createHeader();
+    const promise = axios.patch(BASE_URL + "disciplinas/periodoplan", body);
     return promise;
   },
 

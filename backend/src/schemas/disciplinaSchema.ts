@@ -11,3 +11,5 @@ export const periodoPlanSchema = z.object({
   idsDisciplinas: z.array(z.number().int().positive()),
   periodoPlan: z.number().int().min(1)
 });
+
+export const periodoPlanArraySchema = z.array(periodoPlanSchema);

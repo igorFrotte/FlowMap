@@ -57,7 +57,7 @@ export default function Fluxograma() {
   function disciplinaClicada(id : number){
     const obj = {
       idAluno: 1, //mudar #########################################################
-      idsDisciplinas: [id],
+      idsDisciplinas: [id], 
       aprovado: !disciplinas[id].aprovado
     };
     disciplinas[id].aprovado = !disciplinas[id].aprovado;

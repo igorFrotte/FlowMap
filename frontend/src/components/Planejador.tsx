@@ -100,40 +100,35 @@ export default function Planejador() {
   const [backlogTotal, setBacklogTotal] = useState<Disciplina[]>([]);
   const [plan, setPlan] = useState<Disciplina[][]>([[]]);
   const [bloqueados, setBloqueados] = useState<boolean[]>([false]);
-  const [disciplinas, setDisciplinas] = useState<Record<string, Disciplina>>(
-    {}
-  );
+  const [disciplinas, setDisciplinas] = useState<Record<string, Disciplina>>({});
+  const [iniciado, setIniciado] = useState(false);
 
-  /* Inicializa backlog considerando disciplinas aprovadas como pré-requisitos cumpridos */
-  useEffect(() => {
+  /* Função para carregar os dados do planejamento */
+  const iniciarPlanejamento = () => {
     axiosService
       .mostrarDisciplinasDoAluno()
       .then((r) => {
         setDisciplinas(r.data);
 
         const todas = Object.values(r.data) as Disciplina[];
-
-        // Lista de IDs de disciplinas aprovadas (pré-requisitos cumpridos)
         const aprovadasIds = todas.filter(d => d.aprovado).map(d => d.id);
-
-        // Filtra apenas disciplinas não aprovadas
         const naoAprovadas = todas.filter(d => !d.aprovado);
 
-        // Disciplinas que podem ser cursadas: requisitos todos cumpridos
         const iniciais = naoAprovadas.filter(d =>
           d.requisitos.every(r => aprovadasIds.includes(r.id))
         );
-
-        // Disciplinas bloqueadas: requisitos ainda não cumpridos
         const bloqueadas = naoAprovadas.filter(d =>
           !d.requisitos.every(r => aprovadasIds.includes(r.id))
         );
 
         setBacklog(iniciais);
         setBacklogTotal(bloqueadas);
+        setPlan([[]]);
+        setBloqueados([false]);
+        setIniciado(true);
       })
       .catch((e) => console.log(e.message));
-  }, []);
+  };
 
   /* Função de drag & drop */
   const handleDragEnd = (event: DragEndEvent) => {
@@ -210,7 +205,6 @@ export default function Planejador() {
     newBloqueados[lastIdx] = true;
     setBloqueados(newBloqueados);
 
-    // IDs de disciplinas aprovadas + já alocadas no plano
     const disciplinasAlocadasIds = plan.flat().map(d => d.id);
     const disciplinasCumpridasIds = [
       ...disciplinasAlocadasIds,
@@ -237,10 +231,44 @@ export default function Planejador() {
     setBloqueados([...newBloqueados, false]);
   };
 
+  const salvarPlanejamento = () => {
+    if (backlog.length === 0 && backlogTotal.length === 0) {
+      let objs = plan.map((el, i) => {
+        let obj = {
+          idAluno: 1, //mudar ##########################################################################
+          idsDisciplinas: el.map((e) => e.id),
+          periodoPlan: (i+1)
+        }
+        return obj;
+      });
+      const promise = axiosService.mudarPlanejamento(objs);
+      promise
+          .then(() => {
+            setIniciado(false);
+            setBacklog([]);
+            setBacklogTotal([]);
+            setPlan([[]]);
+            setBloqueados([false]);
+            setDisciplinas({});
+            alert("planejamento salvo!");
+          })
+          .catch(e => console.log(e.message)); 
+    } else {
+      alert("Não é possível salvar enquanto houver disciplinas no backlog.");
+    }
+  };
+
+  if (!iniciado) {
+    return (
+      <div>
+        <button onClick={iniciarPlanejamento}>Iniciar Planejamento</button>
+      </div>
+    );
+  }
+
   return (
     <div style={{ display: "flex", flexWrap: "wrap" }}>
       <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        {/* Backlog Total */}
         <DroppableColumn id="backlog-total" title="Backlog Total" disabled>
           {backlogTotal.map((d) => (
             <DraggableItem key={d.id} id={`block-${d.id}`} disabled>
@@ -251,7 +279,6 @@ export default function Planejador() {
           ))}
         </DroppableColumn>
 
-        {/* Backlog */}
         <DroppableColumn id="backlog" title="Backlog">
           {backlog.map((d) => (
             <DraggableItem key={d.id} id={`backlog-${d.id}`}>
@@ -260,7 +287,6 @@ export default function Planejador() {
           ))}
         </DroppableColumn>
 
-        {/* Períodos */}
         {plan.map((periodo, idx) => (
           <DroppableColumn
             key={idx}
@@ -281,8 +307,11 @@ export default function Planejador() {
         ))}
       </DndContext>
 
-      <div style={{ width: "100%" }}>
+      <div style={{ width: "100%", marginTop: "20px" }}>
         <button onClick={addPeriodo}>+ Adicionar Período</button>
+        <button onClick={salvarPlanejamento} style={{ marginLeft: "10px" }}>
+          Salvar Planejamento
+        </button>
       </div>
     </div>
   );
