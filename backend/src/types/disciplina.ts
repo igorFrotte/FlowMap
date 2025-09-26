@@ -9,5 +9,6 @@ export type DisciplinaComDeps = {
     periodoplan: number | null
     requisitos: { id: number; nome: string }[]
     dependentes: { id: number; nome: string }[]
+    credito: number
   }
   

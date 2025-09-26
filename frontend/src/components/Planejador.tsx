@@ -20,6 +20,7 @@ interface Disciplina {
   aprovado: boolean;
   periodoplan?: number | null;
   borda?: string;
+  credito: number;
 }
 
 /* ------------------ ITEM ARRASTÁVEL ------------------ */
@@ -100,32 +101,25 @@ export default function Planejador() {
   const [backlogTotal, setBacklogTotal] = useState<Disciplina[]>([]);
   const [plan, setPlan] = useState<Disciplina[][]>([[]]);
   const [bloqueados, setBloqueados] = useState<boolean[]>([false]);
-  const [disciplinas, setDisciplinas] = useState<Record<string, Disciplina>>({});
+  const [disciplinas, setDisciplinas] = useState<Record<string, Disciplina>>(
+    {}
+  );
   const [iniciado, setIniciado] = useState(false);
 
-  // 👇 novo estado para guardar o planejamento anterior
   const [planoAnterior, setPlanoAnterior] = useState<Disciplina[][]>([]);
 
   useEffect(() => {
-    // Quando o componente monta, carregamos os dados para ver se já existe plano anterior
     axiosService
       .mostrarDisciplinasDoAluno()
       .then((r) => {
         setDisciplinas(r.data);
-
         const todas = Object.values(r.data) as Disciplina[];
-
-        // monta plano agrupando pelas disciplinas que já possuem periodoPlan
         const maxPeriodo = Math.max(
           0,
           ...todas.filter((d) => d.periodoplan).map((d) => d.periodoplan ?? 0)
         );
-
         if (maxPeriodo > 0) {
-          let plano: Disciplina[][] = Array.from(
-            { length: maxPeriodo },
-            () => []
-          );
+          let plano: Disciplina[][] = Array.from({ length: maxPeriodo }, () => []);
           todas.forEach((d) => {
             if (d.periodoplan) {
               plano[d.periodoplan - 1].push(d);
@@ -137,31 +131,45 @@ export default function Planejador() {
       .catch((e) => console.log(e.message));
   }, []);
 
-  /* Função para carregar os dados do planejamento */
-  const iniciarPlanejamento = () => {
+  /* Função genérica para iniciar/reiniciar planejamento */
+  const resetPlanejamento = () => {
     axiosService
       .mostrarDisciplinasDoAluno()
       .then((r) => {
         setDisciplinas(r.data);
-
         const todas = Object.values(r.data) as Disciplina[];
-        const aprovadasIds = todas.filter((d) => d.aprovado).map((d) => d.id);
+        const aprovadas = todas.filter((d) => d.aprovado);
+        const aprovadasIds = aprovadas.map((d) => d.id);
         const naoAprovadas = todas.filter((d) => !d.aprovado);
 
-        const iniciais = naoAprovadas.filter((d) =>
-          d.requisitos.every((r) => aprovadasIds.includes(r.id))
+        const creditosConcluidos = aprovadas.reduce(
+          (acc, d) => acc + d.credito,
+          0
         );
-        const bloqueadas = naoAprovadas.filter(
-          (d) => !d.requisitos.every((r) => aprovadasIds.includes(r.id))
-        );
+
+        const iniciais = naoAprovadas.filter((d) => {
+          const requisitosOK = d.requisitos.every((r) =>
+            aprovadasIds.includes(r.id)
+          );
+          const creditosOK =
+            !d.reqcreditos || creditosConcluidos >= d.reqcreditos;
+          return requisitosOK && creditosOK;
+        });
+
+        const bloqueadas = naoAprovadas.filter((d) => {
+          const requisitosOK = d.requisitos.every((r) =>
+            aprovadasIds.includes(r.id)
+          );
+          const creditosOK =
+            !d.reqcreditos || creditosConcluidos >= d.reqcreditos;
+          return !(requisitosOK && creditosOK);
+        });
 
         setBacklog(iniciais);
         setBacklogTotal(bloqueadas);
         setPlan([[]]);
         setBloqueados([false]);
         setIniciado(true);
-
-        // 👇 ao iniciar planejamento, some com o plano anterior
         setPlanoAnterior([]);
       })
       .catch((e) => console.log(e.message));
@@ -171,14 +179,12 @@ export default function Planejador() {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over) return;
-
     const activeId = String(active.id);
     const overId = String(over.id);
 
     const parseActive = (id: string) => {
       const mBack = id.match(/^backlog-(\d+)$/);
       if (mBack) return { from: "backlog" as const, itemId: Number(mBack[1]) };
-
       const mPeriodItem = id.match(/^periodo-(\d+)-(\d+)$/);
       if (mPeriodItem)
         return {
@@ -186,7 +192,6 @@ export default function Planejador() {
           periodoIndex: Number(mPeriodItem[1]),
           itemId: Number(mPeriodItem[2]),
         };
-
       return null;
     };
 
@@ -204,7 +209,6 @@ export default function Planejador() {
     const src = parseActive(activeId);
     const dest = parseOver(overId);
     if (!src || dest.type === "unknown") return;
-
     if (src.from === "backlog" && dest.type === "backlog") return;
     if (
       src.from === "periodo" &&
@@ -212,7 +216,6 @@ export default function Planejador() {
       src.periodoIndex === dest.periodoIndex
     )
       return;
-
     if (dest.type === "periodo" && bloqueados[dest.periodoIndex]) return;
     if (src.from === "periodo" && bloqueados[src.periodoIndex]) return;
 
@@ -228,9 +231,7 @@ export default function Planejador() {
       item = newPlan[sIdx].find((d) => d.id === src.itemId);
       newPlan[sIdx] = newPlan[sIdx].filter((d) => d.id !== src.itemId);
     }
-
     if (!item) return;
-
     if (dest.type === "backlog") {
       newBacklog.push(item);
     } else {
@@ -238,7 +239,6 @@ export default function Planejador() {
       if (!newPlan[dstIdx]) newPlan[dstIdx] = [];
       newPlan[dstIdx] = [...newPlan[dstIdx], item];
     }
-
     setBacklog(newBacklog);
     setPlan(newPlan);
   };
@@ -246,7 +246,6 @@ export default function Planejador() {
   /* Adicionar novo período e bloquear o anterior */
   const addPeriodo = () => {
     const lastIdx = plan.length - 1;
-
     const newBloqueados = [...bloqueados];
     newBloqueados[lastIdx] = true;
     setBloqueados(newBloqueados);
@@ -258,25 +257,34 @@ export default function Planejador() {
         .filter((d) => d.aprovado)
         .map((d) => d.id),
     ];
-
     const todasNaoAprovadas = Object.values(disciplinas).filter(
       (d) => !d.aprovado
     ) as Disciplina[];
 
-    const novasDisciplinas = todasNaoAprovadas.filter(
-      (d) =>
-        !disciplinasAlocadasIds.includes(d.id) &&
-        d.requisitos.every((r) => disciplinasCumpridasIds.includes(r.id))
-    );
+    const creditosCumpridos = Object.values(disciplinas)
+      .filter((d) => d.aprovado || disciplinasAlocadasIds.includes(d.id))
+      .reduce((acc, d) => acc + d.credito, 0);
+
+    const novasDisciplinas = todasNaoAprovadas.filter((d) => {
+      const requisitosOK = d.requisitos.every((r) =>
+        disciplinasCumpridasIds.includes(r.id)
+      );
+      const creditosOK = !d.reqcreditos || creditosCumpridos >= d.reqcreditos;
+      return !disciplinasAlocadasIds.includes(d.id) && requisitosOK && creditosOK;
+    });
+
+    const bloqueadas = todasNaoAprovadas.filter((d) => {
+      const requisitosOK = d.requisitos.every((r) =>
+        disciplinasCumpridasIds.includes(r.id)
+      );
+      const creditosOK = !d.reqcreditos || creditosCumpridos >= d.reqcreditos;
+      return (
+        !disciplinasAlocadasIds.includes(d.id) && !(requisitosOK && creditosOK)
+      );
+    });
+
     setBacklog(novasDisciplinas);
-
-    const bloqueadas = todasNaoAprovadas.filter(
-      (d) =>
-        !disciplinasAlocadasIds.includes(d.id) &&
-        !d.requisitos.every((r) => disciplinasCumpridasIds.includes(r.id))
-    );
     setBacklogTotal(bloqueadas);
-
     setPlan([...plan, []]);
     setBloqueados([...newBloqueados, false]);
   };
@@ -285,7 +293,7 @@ export default function Planejador() {
     if (backlog.length === 0 && backlogTotal.length === 0) {
       let objs = plan.map((el, i) => {
         let obj = {
-          idAluno: 1, // mudar ##########################################################################
+          idAluno: 1,
           idsDisciplinas: el.map((e) => e.id),
           periodoPlan: i + 1,
         };
@@ -295,29 +303,22 @@ export default function Planejador() {
       promise
         .then(() => {
           alert("Planejamento salvo!");
-  
-          // 🔹 reseta estados de edição
           setIniciado(false);
           setBacklog([]);
           setBacklogTotal([]);
           setPlan([[]]);
           setBloqueados([false]);
-  
-          // 🔹 recarrega disciplinas para montar o plano anterior
           axiosService
             .mostrarDisciplinasDoAluno()
             .then((r) => {
               setDisciplinas(r.data);
-  
               const todas = Object.values(r.data) as Disciplina[];
-  
               const maxPeriodo = Math.max(
                 0,
                 ...todas
                   .filter((d) => d.periodoplan)
                   .map((d) => d.periodoplan ?? 0)
               );
-  
               if (maxPeriodo > 0) {
                 let plano: Disciplina[][] = Array.from(
                   { length: maxPeriodo },
@@ -339,12 +340,11 @@ export default function Planejador() {
     } else {
       alert("Não é possível salvar enquanto houver disciplinas no backlog.");
     }
-  };  
+  };
 
   if (!iniciado) {
     return (
       <div>
-        {/* 👇 mostra plano anterior se existir */}
         {planoAnterior.length > 0 && (
           <div style={{ marginBottom: "20px" }}>
             <h2>Planejamento Anterior</h2>
@@ -381,8 +381,7 @@ export default function Planejador() {
             </div>
           </div>
         )}
-
-        <button onClick={iniciarPlanejamento}>Iniciar Planejamento</button>
+        <button onClick={resetPlanejamento}>Iniciar Planejamento</button>
       </div>
     );
   }
@@ -395,8 +394,9 @@ export default function Planejador() {
             <DraggableItem key={d.id} id={`block-${d.id}`} disabled>
               <span
                 title={
-                  "Requisitos: " +
-                  d.requisitos.map((r) => r.nome).join(", ")
+                  d.reqcreditos
+                    ? `Requisito: ${d.reqcreditos} créditos`
+                    : "Requisito: " + d.requisitos.map((r) => r.nome).join(", ")
                 }
               >
                 {d.nome + " |       | " + d.periodo}
@@ -432,11 +432,16 @@ export default function Planejador() {
           </DroppableColumn>
         ))}
       </DndContext>
-
       <div style={{ width: "100%", marginTop: "20px" }}>
         <button onClick={addPeriodo}>+ Adicionar Período</button>
         <button onClick={salvarPlanejamento} style={{ marginLeft: "10px" }}>
           Salvar Planejamento
+        </button>
+        <button
+          onClick={resetPlanejamento}
+          style={{ marginLeft: "10px", backgroundColor: "#f66", color: "#fff" }}
+        >
+          Reiniciar Planejamento
         </button>
       </div>
     </div>

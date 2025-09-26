@@ -17,7 +17,8 @@ const disciplinaService = {
         requisitos: d.disciplina.requisitos?.map(r => ({ id: r.req.id, nome: r.req.nome })) ?? [],
         dependentes: d.disciplina.dependentes?.map(dep => ({ id: dep.dep.id, nome: dep.dep.nome })) ?? [],
         aprovado: d.aprovado,
-        periodoplan: d.periodoplan
+        periodoplan: d.periodoplan,
+        credito: d.disciplina.credito
       };
       return acc;
     }, {} as Record<number, DisciplinaComDeps>);

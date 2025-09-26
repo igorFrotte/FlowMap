@@ -15,6 +15,7 @@ interface Disciplina {
   aprovado: boolean;
   periodoplan?: number | null;
   borda?: string;
+  credito: number;
 }
 
 interface Dependencia {
