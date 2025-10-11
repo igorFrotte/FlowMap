@@ -26,10 +26,10 @@ const disciplinaController = {
     try {
       const { idAluno, idsDisciplinas, aprovado } = validacao.data;
       const result = await disciplinaService.updateAprovadasDoAluno(idAluno, idsDisciplinas, aprovado);
-      res.status(STATUS_CODE.OK).json(result);
+      return res.status(STATUS_CODE.OK).json(result);
     } catch (error) {
       console.error(error);
-      res.status(STATUS_CODE.SERVER_ERROR).json({ message: 'Erro ao atualizar disciplinas aprovadas' });
+      return res.status(STATUS_CODE.SERVER_ERROR).json({ message: 'Erro ao atualizar disciplinas aprovadas' });
     }
   },
 
@@ -40,10 +40,10 @@ const disciplinaController = {
     try {
       const periodos = validacao.data;
       const result = await disciplinaService.updatePeriodoPlanDoAluno(periodos);
-      res.status(STATUS_CODE.OK).json(result);
+      return res.status(STATUS_CODE.OK).json(result);
     } catch (error) {
       console.error(error);
-      res.status(STATUS_CODE.SERVER_ERROR).json({ message: 'Erro ao atualizar período planejado das disciplinas' });
+      return res.status(STATUS_CODE.SERVER_ERROR).json({ message: 'Erro ao atualizar período planejado das disciplinas' });
     }
   },
 
