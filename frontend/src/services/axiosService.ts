@@ -10,7 +10,7 @@ interface FlowMap {
 }
 
 const axiosService = {
-  signUp: (body: {}) => { //mudar
+  signUp: (body: {email: string, password: string, nome: string, idCurso: number}) => {
     const promise = axios.post(BASE_URL + "sign-up", body);
     return promise;
   },
@@ -25,20 +25,30 @@ const axiosService = {
     const promise = axios.get(BASE_URL + "token", header);
     return promise;
   },
-  
-  mostrarDisciplinasDoAluno: () => {
-    const header = createHeader();
-    const promise = axios.get(BASE_URL + "disciplinas/1", header);
+
+  mostrarUniversidades: () => {
+    const promise = axios.get(BASE_URL + "universidades");
     return promise;
   },
 
-  mudarAprovacao: (body: {idAluno: number, idsDisciplinas: number[], aprovado: boolean}) => {
+  mostrarCursosByUniversidade: (idUniversidade: number) => {
+    const promise = axios.get(BASE_URL + "cursos/" + idUniversidade);
+    return promise;
+  },
+  
+  mostrarDisciplinasDoAluno: () => {
+    const header = createHeader();
+    const promise = axios.get(BASE_URL + "disciplinas", header);
+    return promise;
+  },
+
+  mudarAprovacao: (body: {idsDisciplinas: number[], aprovado: boolean}) => {
     const header = createHeader();
     const promise = axios.patch(BASE_URL + "disciplinas/aprovadas", body, header);
     return promise;
   },
 
-  mudarPlanejamento: (body: {idAluno: number, idsDisciplinas: number[], periodoPlan: number}[]) => {
+  mudarPlanejamento: (body: {idsDisciplinas: number[], periodoPlan: number}[]) => {
     const header = createHeader();
     const promise = axios.patch(BASE_URL + "disciplinas/periodoplan", body, header);
     return promise;

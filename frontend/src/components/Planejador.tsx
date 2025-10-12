@@ -293,7 +293,6 @@ export default function Planejador() {
     if (backlog.length === 0 && backlogTotal.length === 0) {
       let objs = plan.map((el, i) => {
         let obj = {
-          idAluno: 1,
           idsDisciplinas: el.map((e) => e.id),
           periodoPlan: i + 1,
         };

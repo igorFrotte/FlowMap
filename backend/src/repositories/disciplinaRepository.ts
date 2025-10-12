@@ -1,4 +1,5 @@
 import prisma from '../prisma/client.js';
+import { Prisma } from '../generated/prisma/index.js';
 
 const disciplinaRepository = {
   
@@ -26,11 +27,11 @@ const disciplinaRepository = {
     })
   }, 
 
-  updateDisciplinasPeriodoPlanDoAluno: async (periodos: {idAluno: number, idsDisciplinas: number[], periodoPlan: number}[]) => {
+  updateDisciplinasPeriodoPlanDoAluno: async (periodos: {idsDisciplinas: number[], periodoPlan: number}[], idAluno: number) => {
     const updates = periodos.map(p =>
       prisma.aluno_disciplina.updateMany({
         where: {
-          idaluno: p.idAluno,
+          idaluno: idAluno,
           iddisciplina: { in: p.idsDisciplinas }
         },
         data: { periodoplan: p.periodoPlan }
@@ -39,7 +40,20 @@ const disciplinaRepository = {
   
     // Executa todos os updates em uma única transação
     return prisma.$transaction(updates);
-  }
+  },
+
+  disciplinasDoCurso: async (idCurso: number, tx: Prisma.TransactionClient = prisma) => {
+    return tx.disciplina.findMany({ where: { idcurso: idCurso } });
+  },
+
+  inserirDisciplinasDoAluno: async (disciplinas: { idAluno: number; idDisciplina: number }[], tx: Prisma.TransactionClient = prisma) => {
+    return tx.aluno_disciplina.createMany({
+      data: disciplinas.map(d => ({
+        idaluno: d.idAluno,
+        iddisciplina: d.idDisciplina,
+      })),
+    });
+  },
 
 };
 

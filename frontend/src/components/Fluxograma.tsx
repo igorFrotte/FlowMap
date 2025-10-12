@@ -24,7 +24,6 @@ interface Dependencia {
 }
 
 interface ObjetoAprovado {
-  idAluno: number;
   idsDisciplinas: number[];
   aprovado: boolean;
 }
@@ -57,7 +56,6 @@ export default function Fluxograma() {
 
   function disciplinaClicada(id : number){
     const obj = {
-      idAluno: 1, //mudar #########################################################
       idsDisciplinas: [id], 
       aprovado: !disciplinas[id].aprovado
     };

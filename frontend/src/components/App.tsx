@@ -4,6 +4,7 @@ import Planejador from "./Planejador";
 import PrivatePage from "./PrivatePage";
 import Home from "./Home";
 import Login from "./Login";
+import CadastroAluno from "./CadastroAluno";
 
 export default function App() {
   return (
@@ -12,6 +13,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/cadastro" element={<CadastroAluno />} />
           <Route path="/fluxograma" element={<PrivatePage><Fluxograma /></PrivatePage>} />
           <Route path="/planejador" element={<PrivatePage><Planejador /></PrivatePage>} />
         </Routes>
