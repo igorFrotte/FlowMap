@@ -16,7 +16,7 @@ const authController = {
     try {
         const { email, password } = validacao.data;
         const result = await authService.verificarEmail(email);
-
+        
         if (!result)
             return res.sendStatus(STATUS_CODE.UNAUTHORIZED);
 
@@ -24,17 +24,19 @@ const authController = {
             return res.sendStatus(STATUS_CODE.UNAUTHORIZED);
 
         const token = jwt.sign(
-            { userId: result?.id },
+            { userId: result?.id, tipo: result.tipo },
             process.env.TOKEN_SECRET || "chaveSecreta",
             { expiresIn: 3600 * 2}
         );
 
         const response = {
-            userId: result?.id,
-            userName: result?.nome,
-            userCourseId: result?.idcurso,
-            token  
+          userId: result.id,
+          userName: result.nome,
+          userCourseId: result.idcurso, 
+          tipo: result.tipo,
+          token
         };
+
         return res.status(STATUS_CODE.OK).json(response);
       } catch (error) {
         console.error(error);
@@ -58,7 +60,6 @@ const authController = {
       const novoAluno = await authService.criarAluno(email, nome, idCurso, hashSenha);
   
       const { senha: _, ...alunoSemSenha } = novoAluno;
-      console.log(alunoSemSenha)
   
       return res.status(STATUS_CODE.CREATED).json(alunoSemSenha);
     } catch (error) {

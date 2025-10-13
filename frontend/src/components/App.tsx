@@ -5,6 +5,7 @@ import PrivatePage from "./PrivatePage";
 import Home from "./Home";
 import Login from "./Login";
 import CadastroAluno from "./CadastroAluno";
+import PainelPrincipal from "./PainelPrincipal";
 
 export default function App() {
   return (
@@ -14,8 +15,9 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/cadastro" element={<CadastroAluno />} />
-          <Route path="/fluxograma" element={<PrivatePage><Fluxograma /></PrivatePage>} />
-          <Route path="/planejador" element={<PrivatePage><Planejador /></PrivatePage>} />
+          <Route path="/fluxograma" element={<PrivatePage allowed={["aluno"]}><Fluxograma /></PrivatePage>} />
+          <Route path="/planejador" element={<PrivatePage allowed={["aluno"]}><Planejador /></PrivatePage>} />
+          <Route path="/admin" element={<PrivatePage allowed={["admin"]}><PainelPrincipal /></PrivatePage>} />
         </Routes>
       </BrowserRouter>
     </> 

@@ -2,10 +2,26 @@ import authRepository from '../repositories/authRepository.js';
 import disciplinaRepository from '../repositories/disciplinaRepository.js';
 import prisma from '../prisma/client.js';
 
+export interface Usuario {
+  id: number;
+  nome: string;
+  email: string;
+  senha: string;
+  idcurso: number | null;
+  tipo: "aluno" | "admin";
+}
+
 const authService = {
-  verificarEmail: async (email: string) => {
-    const results = await authRepository.listarEmailSenha(email);
-    return results;
+  verificarEmail: async (email: string) : Promise<Usuario | null> => {
+    const aluno = await authRepository.listarAlunoPorEmail(email);
+    if (aluno)
+      return { ...aluno, tipo: "aluno" };
+  
+    const adm = await authRepository.listarAdmPorEmail(email);
+    if (adm)
+      return { ...adm, tipo: "admin", idcurso: null };
+  
+    return null;
   },
 
   criarAluno: async (email: string, nome: string, idCurso: number, senha: string) => {

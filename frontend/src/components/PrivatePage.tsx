@@ -5,9 +5,10 @@ import Header from "./Header";
 
 interface PrivatePageProps {
   children: React.ReactNode;
+  allowed: ("aluno" | "admin")[];
 }
 
-export default function PrivatePage({ children }: PrivatePageProps) {
+export default function PrivatePage({ children, allowed }: PrivatePageProps) {
   const navigate = useNavigate();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -15,20 +16,20 @@ export default function PrivatePage({ children }: PrivatePageProps) {
   async function checkAuth() {
     const flowMap = localStorage.getItem("FlowMap");
 
-    if (!flowMap) {
-      handleUnauthorized();
-      return;
-    }
+    if (!flowMap)
+      return handleUnauthorized();
 
     try {
       const authData = JSON.parse(flowMap);
 
-      if (!authData || !authData.token) {
-        handleUnauthorized();
-        return;
-      }
+      if (!authData || !authData.token)
+        return handleUnauthorized();
 
       await axiosService.validToken();
+
+      const userType = authData.tipo;
+      if (!allowed.includes(userType))
+        return handleUnauthorized();
 
       setIsAuthorized(true);
     } catch (error) {

@@ -2,9 +2,15 @@ import prisma from '../prisma/client.js';
 import { Prisma } from '../generated/prisma/index.js';
 
 const authRepository = {
-  
-  listarEmailSenha: async (email : string) => {
+
+  listarAlunoPorEmail: async (email: string) => {
     return prisma.aluno.findFirst({
+      where: { email }
+    });
+  },
+  
+  listarAdmPorEmail: async (email: string) => {
+    return prisma.administrador.findFirst({
       where: { email }
     });
   },

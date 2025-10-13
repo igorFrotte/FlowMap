@@ -34,23 +34,30 @@ export default function Login() {
     setError("");
   
     const body = { email, password };
-  
+
     axiosService
-      .signIn(body)
-      .then((response) => {
-        localStorage.setItem("FlowMap", JSON.stringify(response.data));
+    .signIn(body)
+    .then((response) => {
+      localStorage.setItem("FlowMap", JSON.stringify(response.data));
+      
+      const userType = response.data.tipo;
+
+      if (userType === "admin") {
+        navigate("/admin");
+      } else {
         navigate("/fluxograma");
-      })
-      .catch((err) => {
-        if (err.response?.status === 401) {
-          setError("Email ou senha incorretos.");
-        } else {
-          setError("Erro ao conectar com o servidor.");
-        }
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+      }
+    })
+    .catch((err) => {
+      if (err.response?.status === 401) {
+        setError("Email ou senha incorretos.");
+      } else {
+        setError("Erro ao conectar com o servidor.");
+      }
+    })
+    .finally(() => {
+      setLoading(false);
+    });
   };
 
   return (

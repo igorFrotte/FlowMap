@@ -7,6 +7,7 @@ dotenv.config();
 
 interface CustomJwtPayload extends JwtPayload {
   userId: number;
+  tipo: "aluno" | "admin";
 }
 
 export function authMiddleware(req: Request, res: Response, next: NextFunction) {
@@ -19,8 +20,9 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
     const key = process.env.TOKEN_SECRET || "chaveSecreta";
     const decoded = jwt.verify(token, key) as CustomJwtPayload;
 
-    if (decoded && decoded.userId) {
+    if (decoded && decoded.userId && decoded.tipo) {
       res.locals.userId = decoded.userId;
+      res.locals.tipo = decoded.tipo;
       next();
     } else {
       return res.status(STATUS_CODE.UNAUTHORIZED).json({ error: "Token inválido" });
@@ -28,4 +30,18 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
   } catch {
     return res.sendStatus(STATUS_CODE.UNAUTHORIZED);
   }
-}
+};
+
+export function authAlunoMiddleware(req: Request, res: Response, next: NextFunction) {
+  const tipo = res.locals.tipo;
+  if (tipo !== "aluno")
+    return res.status(STATUS_CODE.FORBIDDEN).json({ error: "Acesso restrito a alunos." });
+  next();
+};
+
+export function authADMMiddleware(req: Request, res: Response, next: NextFunction) {
+  const tipo = res.locals.tipo;
+  if (tipo !== "admin")
+    return res.status(STATUS_CODE.FORBIDDEN).json({ error: "Acesso restrito a administradores." });
+  next();
+};
