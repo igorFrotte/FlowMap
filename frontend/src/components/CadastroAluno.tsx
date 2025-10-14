@@ -36,7 +36,7 @@ export default function CadastroAluno() {
     }
 
     axiosService
-      .mostrarCursosByUniversidade(Number(universidadeSelecionada))
+      .mostrarCursosDaUniversidade(Number(universidadeSelecionada))
       .then((res) => {
         setCursos(res.data);
       })

@@ -14,8 +14,10 @@ const disciplinaService = {
         dificuldade: d.disciplina.dificuldade,
         informacao: d.disciplina.informacao,
         reqcreditos: d.disciplina.reqcreditos,
+        reqperiodo: d.disciplina.reqperiodo,
         requisitos: d.disciplina.requisitos?.map(r => ({ id: r.req.id, nome: r.req.nome })) ?? [],
         dependentes: d.disciplina.dependentes?.map(dep => ({ id: dep.dep.id, nome: dep.dep.nome })) ?? [],
+        correquisitos: d.disciplina.correquisitos?.map(dep => ({ id: dep.correq.id, nome: dep.correq.nome })) ?? [],
         aprovado: d.aprovado,
         periodoplan: d.periodoplan,
         credito: d.disciplina.credito

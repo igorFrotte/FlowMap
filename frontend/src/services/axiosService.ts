@@ -27,12 +27,23 @@ const axiosService = {
   },
 
   mostrarUniversidades: () => {
-    const promise = axios.get(BASE_URL + "universidades");
+    const promise = axios.get(BASE_URL + "universidade");
     return promise;
   },
 
-  mostrarCursosByUniversidade: (idUniversidade: number) => {
-    const promise = axios.get(BASE_URL + "cursos/" + idUniversidade);
+  mostrarCursosDaUniversidade: (idUniversidade: number) => {
+    const promise = axios.get(BASE_URL + "cursos/universidade/" + idUniversidade);
+    return promise;
+  },
+
+  mostrarUniversidadeDoCurso: (idCurso: number) => {
+    const promise = axios.get(BASE_URL + "universidade/" + idCurso);
+    return promise;
+  },
+
+  mostrarCursosDoADM: () => {
+    const header = createHeader();
+    const promise = axios.get(BASE_URL + "cursos/adm", header);
     return promise;
   },
   

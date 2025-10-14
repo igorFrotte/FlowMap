@@ -5,6 +5,13 @@ const courseRepository = {
     return prisma.curso.findMany({ where: { iduniversidade: idUniversidade } });
   },
 
+  cursosDoADM: async (idADM: number) => {
+    return prisma.curso.findMany({
+      where: { idadm: idADM },
+      include: { universidade: true },
+    });
+  },
+
   listarUniversidades: async () => {
     return prisma.universidade.findMany({});
   },

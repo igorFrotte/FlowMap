@@ -8,6 +8,10 @@ const courseService = {
   cursosDaUniversidade: async (idUniversidade: number) => {
     return courseRepository.cursosDaUniversidade(idUniversidade);
   },
+
+  cursosDaADM: async (idADM: number) => {
+    return courseRepository.cursosDoADM(idADM);
+  },
 };
 
 export default courseService;

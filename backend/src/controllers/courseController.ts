@@ -33,6 +33,19 @@ const courseController = {
         .json({ error: "Erro ao listar cursos da universidade" });
     }
   },
+
+  cursosDoADM: async (req: Request, res: Response) => {
+    const idADM = res.locals.userId;
+    try {
+      const cursos = await courseService.cursosDaADM(idADM);
+      return res.status(STATUS_CODE.OK).json(cursos);
+    } catch (error) {
+      console.error(error);
+      return res
+        .status(STATUS_CODE.SERVER_ERROR)
+        .json({ error: "Erro ao listar cursos do ADM" });
+    }
+  },
 };
 
 export default courseController;

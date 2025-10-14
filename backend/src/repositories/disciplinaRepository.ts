@@ -10,7 +10,8 @@ const disciplinaRepository = {
         disciplina : {
           include: {
             requisitos: { include: { req: true } },
-            dependentes: { include: { dep: true } }
+            dependentes: { include: { dep: true } },
+            correquisitos: { include: { correq: true }}
           }
         }
       }

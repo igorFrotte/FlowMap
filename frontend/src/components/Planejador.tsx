@@ -15,6 +15,8 @@ interface Disciplina {
   dificuldade?: string | null;
   informacao?: string | null;
   reqcreditos?: number | null;
+  reqperiodo?: number | null;
+  correquisitos: { id: number; nome: string }[];
   requisitos: { id: number; nome: string }[];
   dependentes: { id: number; nome: string }[];
   aprovado: boolean;
