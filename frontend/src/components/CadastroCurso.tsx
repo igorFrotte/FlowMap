@@ -17,8 +17,8 @@ interface Disciplina {
   informacao?: string;
   reqCreditos?: number;
   reqPeriodos?: number;
-  preRequisitos?: number[]; // ids das disciplinas
-  coRequisitos?: number[];  // ids das disciplinas
+  preRequisitos?: string[]; // ids compostos como "periodo-index"
+  coRequisitos?: string[];
 }
 
 interface Periodo {
@@ -43,25 +43,53 @@ export default function CursoForm() {
     periodos: [],
   });
   const [universidades, setUniversidades] = useState<Universidade[]>([]);
-  const [novaUniversidade, setNovaUniversidade] = useState("");
   const [error, setError] = useState("");
-
   const [openIndex, setOpenIndex] = useState<{ periodo: number; disciplina: number } | null>(null);
 
+  // Modal de criação de universidade
+  const [modalAberto, setModalAberto] = useState(false);
+  const [novaUniversidadeNome, setNovaUniversidadeNome] = useState("");
+  const [notificacao, setNotificacao] = useState("");
+
   useEffect(() => {
-    axiosService.mostrarUniversidades().then(res => setUniversidades(res.data));
+    carregarUniversidades();
     // if (id) axiosService.buscarCurso(id).then(res => setCurso(res.data));
   }, [id]);
 
+  const carregarUniversidades = async () => {
+    try {
+      const res = await axiosService.mostrarUniversidades();
+      setUniversidades(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const abrirModal = () => setModalAberto(true);
+  const fecharModal = () => {
+    setModalAberto(false);
+    setNovaUniversidadeNome("");
+  };
+
+  const criarNovaUniversidade = async () => {
+    if (!novaUniversidadeNome.trim()) return;
+    try {
+      //const res = await axiosService.criarUniversidade({ nome: novaUniversidadeNome });
+      carregarUniversidades();
+      //setCurso({ ...curso, idUniversidade: res.data.id });
+      setNotificacao("Universidade criada com sucesso!");
+      fecharModal();
+      setTimeout(() => setNotificacao(""), 3000);
+    } catch (err) {
+      console.error(err);
+      setNotificacao("Erro ao criar universidade.");
+      setTimeout(() => setNotificacao(""), 3000);
+    }
+  };
+
   const adicionarPeriodo = () => {
-    const novoPeriodo = {
-      numero: curso.periodos.length + 1,
-      disciplinas: [],
-    };
-    setCurso(prev => ({
-      ...prev,
-      periodos: [...prev.periodos, novoPeriodo],
-    }));
+    const novoPeriodo = { numero: curso.periodos.length + 1, disciplinas: [] };
+    setCurso(prev => ({ ...prev, periodos: [...prev.periodos, novoPeriodo] }));
   };
 
   const adicionarDisciplina = (numPeriodo: number) => {
@@ -105,22 +133,9 @@ export default function CursoForm() {
   const salvarCurso = async () => {
     try {
       setError("");
-      let universidadeId = curso.idUniversidade;
-
-      if (novaUniversidade.trim()) {
-        // const res = await axiosService.criarUniversidade({ nome: novaUniversidade });
-        // universidadeId = res.data.id;
-      }
-
-      const dados = {
-        ...curso,
-        idUniversidade: universidadeId,
-        nPeriodos: curso.periodos.length,
-      };
-
+      const dados = { ...curso, nPeriodos: curso.periodos.length };
       // if (id) await axiosService.atualizarCurso(id, dados);
       // else await axiosService.criarCurso(dados);
-
       navigate("/adm");
     } catch (err) {
       console.error(err);
@@ -128,7 +143,6 @@ export default function CursoForm() {
     }
   };
 
-  // Função auxiliar: busca nome da disciplina pelo id (base simplificada)
   const getDisciplinaNome = (periodoNum: number, idx: number) => {
     const periodo = curso.periodos.find(p => p.numero === periodoNum);
     if (!periodo) return `Disciplina ${idx}`;
@@ -142,8 +156,8 @@ export default function CursoForm() {
         <Title>{id ? "Editar Curso" : "Novo Curso"}</Title>
 
         {error && <ErrorMsg>{error}</ErrorMsg>}
+        {notificacao && <Notificacao>{notificacao}</Notificacao>}
 
-        {/* Curso */}
         <Input
           type="text"
           placeholder="Nome do curso"
@@ -151,7 +165,6 @@ export default function CursoForm() {
           onChange={e => setCurso({ ...curso, nome: e.target.value })}
         />
 
-        {/* Universidade */}
         <Select
           value={curso.idUniversidade}
           onChange={e => setCurso({ ...curso, idUniversidade: +e.target.value })}
@@ -162,18 +175,11 @@ export default function CursoForm() {
           ))}
         </Select>
 
-        <Input
-          type="text"
-          placeholder="Ou criar nova universidade"
-          value={novaUniversidade}
-          onChange={e => setNovaUniversidade(e.target.value)}
-        />
+        <Button type="button" onClick={abrirModal}>+ Criar Nova Universidade</Button>
 
-        {/* Períodos e Disciplinas */}
         <SectionTitle>Períodos</SectionTitle>
-
-        {curso.periodos.map((p, pi) => (
-          <PeriodoCard key={pi}>
+        {curso.periodos.map(p => (
+          <PeriodoCard key={p.numero}>
             <PeriodoHeader>Período {p.numero}</PeriodoHeader>
 
             {p.disciplinas.map((d, di) => (
@@ -209,33 +215,86 @@ export default function CursoForm() {
                     <Input
                       type="number"
                       placeholder="Créditos"
-                      value={d.credito}
+                      value={d.credito || ""}
                       onChange={e => atualizarDisciplina(p.numero, di, "credito", +e.target.value)}
                     />
-                    <Input
-                      type="number"
-                      placeholder="Dificuldade"
+                    <Select
                       value={d.dificuldade || ""}
                       onChange={e => atualizarDisciplina(p.numero, di, "dificuldade", +e.target.value)}
-                    />
+                    >
+                      <option value="">Selecione a dificuldade</option>
+                      <option value={5}>5 - Disciplina muito complexa, exige estudo diário e atenção constante</option>
+                      <option value={4}>4 - Conteúdo avançado, exige prática e compreensão sólida de matérias anteriores</option>
+                      <option value={3}>3 - Conteúdo moderado, exige estudo consistente, mas não intenso</option>
+                      <option value={2}>2 - Conceitos fundamentais, introdutórios, baixo esforço</option>
+                      <option value={1}>1 - Aprendizado rápido, baixa carga prática ou teórica</option>
+                    </Select>
                     <Input
                       type="text"
-                      placeholder="Informações"
+                      placeholder="Informações extras"
                       value={d.informacao || ""}
                       onChange={e => atualizarDisciplina(p.numero, di, "informacao", e.target.value)}
                     />
-                    <Input
-                      type="number"
-                      placeholder="Créditos mínimos exigidos"
-                      value={d.reqCreditos || ""}
-                      onChange={e => atualizarDisciplina(p.numero, di, "reqCreditos", +e.target.value)}
-                    />
-                    <Input
-                      type="number"
-                      placeholder="Período mínimo exigido"
-                      value={d.reqPeriodos || ""}
-                      onChange={e => atualizarDisciplina(p.numero, di, "reqPeriodos", +e.target.value)}
-                    />
+                    
+                    {/* Requisitos em créditos */}
+                    <RequisitoContainer>
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={d.reqCreditos != null}
+                          onChange={(e) =>
+                            atualizarDisciplina(
+                              p.numero,
+                              di,
+                              "reqCreditos",
+                              e.target.checked ? "" : null // <-- valor vazio, não zero
+                            )
+                          }
+                        />
+                        Possui requisitos em créditos cursados
+                      </label>
+                      {d.reqCreditos != null && (
+                        <Input
+                          type="number"
+                          placeholder="Digite o número mínimo de créditos"
+                          autoFocus // <-- foca automaticamente
+                          value={d.reqCreditos}
+                          onChange={(e) =>
+                            atualizarDisciplina(p.numero, di, "reqCreditos", +e.target.value)
+                          }
+                        />
+                      )}
+                    </RequisitoContainer>
+
+                    {/* Requisitos em períodos */}
+                    <RequisitoContainer>
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={d.reqPeriodos != null}
+                          onChange={(e) =>
+                            atualizarDisciplina(
+                              p.numero,
+                              di,
+                              "reqPeriodos",
+                              e.target.checked ? "" : null // <-- valor vazio
+                            )
+                          }
+                        />
+                        Possui requisito de período mínimo
+                      </label>
+                      {d.reqPeriodos != null && (
+                        <Input
+                          type="number"
+                          placeholder="Digite o período mínimo exigido"
+                          autoFocus
+                          value={d.reqPeriodos}
+                          onChange={(e) =>
+                            atualizarDisciplina(p.numero, di, "reqPeriodos", +e.target.value)
+                          }
+                        />
+                      )}
+                    </RequisitoContainer>
 
                     {/* Pré-Requisitos */}
                     <RequisitoContainer>
@@ -246,13 +305,11 @@ export default function CursoForm() {
                           onChange={(e) => {
                             const value = e.target.value;
                             if (!value) return;
-                            const [periodoNum, idxStr] = value.split("-");
-                            const idComposto = `${periodoNum}-${idxStr}`;
-                            const jaExiste = d.preRequisitos?.includes(idComposto as any);
+                            const jaExiste = d.preRequisitos?.includes(value);
                             if (!jaExiste) {
                               atualizarDisciplina(p.numero, di, "preRequisitos", [
                                 ...(d.preRequisitos || []),
-                                idComposto,
+                                value,
                               ]);
                             }
                           }}
@@ -272,7 +329,7 @@ export default function CursoForm() {
 
                       <RequisitoList>
                         {d.preRequisitos?.map((idComp, idx) => {
-                          const [per, ind] = idComp.toString().split("-");
+                          const [per, ind] = idComp.split("-");
                           const nome = getDisciplinaNome(Number(per), Number(ind));
                           return (
                             <RequisitoItem key={idx}>
@@ -304,13 +361,11 @@ export default function CursoForm() {
                           onChange={(e) => {
                             const value = e.target.value;
                             if (!value) return;
-                            const [periodoNum, idxStr] = value.split("-");
-                            const idComposto = `${periodoNum}-${idxStr}`;
-                            const jaExiste = d.coRequisitos?.includes(idComposto as any);
+                            const jaExiste = d.coRequisitos?.includes(value);
                             if (!jaExiste) {
                               atualizarDisciplina(p.numero, di, "coRequisitos", [
                                 ...(d.coRequisitos || []),
-                                idComposto,
+                                value,
                               ]);
                             }
                           }}
@@ -328,7 +383,7 @@ export default function CursoForm() {
 
                       <RequisitoList>
                         {d.coRequisitos?.map((idComp, idx) => {
-                          const [per, ind] = idComp.toString().split("-");
+                          const [per, ind] = idComp.split("-");
                           const nome = getDisciplinaNome(Number(per), Number(ind));
                           return (
                             <RequisitoItem key={idx}>
@@ -362,11 +417,28 @@ export default function CursoForm() {
         <Button type="button" onClick={adicionarPeriodo}>+ Adicionar Período</Button>
         <Button type="button" onClick={salvarCurso}>Salvar Curso</Button>
       </Form>
+
+      {/* Modal de criação de universidade */}
+      {modalAberto && (
+        <ModalOverlay>
+          <ModalContainer>
+            <h3>Criar Nova Universidade</h3>
+            <Input
+              type="text"
+              placeholder="Nome da universidade"
+              value={novaUniversidadeNome}
+              onChange={e => setNovaUniversidadeNome(e.target.value)}
+            />
+            <Button type="button" onClick={criarNovaUniversidade}>Criar</Button>
+            <Button type="button" onClick={fecharModal}>Cancelar</Button>
+          </ModalContainer>
+        </ModalOverlay>
+      )}
     </Container>
   );
 }
 
-/* ======== STYLES ========= */
+/* ===== STYLES ===== */
 const Container = styled.div`
   display: flex;
   justify-content: center;
@@ -387,11 +459,7 @@ const Form = styled.div`
   gap: 1rem;
 `;
 
-const Title = styled.h2`
-  text-align: center;
-  color: #333;
-`;
-
+const Title = styled.h2`text-align: center; color: #333;`;
 const Input = styled.input`
   padding: 0.75rem;
   border: 1px solid #ccc;
@@ -399,18 +467,14 @@ const Input = styled.input`
   font-size: 1rem;
   outline: none;
   margin-bottom: 0.5rem;
-  &:focus {
-    border-color: #007bff;
-  }
+  &:focus { border-color: #007bff; }
 `;
-
 const Select = styled.select`
   padding: 0.75rem;
   border: 1px solid #ccc;
   border-radius: 8px;
   font-size: 1rem;
 `;
-
 const Button = styled.button`
   padding: 0.75rem;
   background: #007bff;
@@ -421,16 +485,10 @@ const Button = styled.button`
   cursor: pointer;
   margin-top: 0.5rem;
   transition: background 0.2s;
-  &:hover {
-    background: #0056b3;
-  }
+  &:hover { background: #0056b3; }
 `;
-
-const ErrorMsg = styled.p`
-  color: #e63946;
-  font-size: 0.9rem;
-  text-align: center;
-`;
+const ErrorMsg = styled.p`color: #e63946; font-size: 0.9rem; text-align: center;`;
+const Notificacao = styled.p`color: #2a9d8f; font-size: 0.9rem; text-align: center; margin-bottom: 0.5rem;`;
 
 const SectionTitle = styled.h3`
   margin-top: 1rem;
@@ -517,4 +575,27 @@ const RequisitoItem = styled.div`
   align-items: center;
   gap: 0.5rem;
   font-size: 0.9rem;
+`;
+
+// ===== Modal =====
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+`;
+
+const ModalContainer = styled.div`
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
 `;
