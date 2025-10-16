@@ -5,7 +5,7 @@ const disciplinaService = {
 
   disciplinasComDepsDoAluno: async (idAluno : number): Promise<Record<number, DisciplinaComDeps>> => {
     const disciplinas = await disciplinaRepository.disciplinasComDependenciasDoAluno(idAluno);
-  
+    if (!disciplinas) throw new Error("Aluno não possui disciplinas vinculadas");
     return disciplinas.reduce((acc, d) => {
       acc[d.disciplina.id] = {
         id: d.disciplina.id,

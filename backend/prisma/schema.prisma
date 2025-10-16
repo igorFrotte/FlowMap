@@ -76,7 +76,7 @@ model disciplina {
 
 model universidade {
   id     Int     @id @default(autoincrement())
-  nome   String  @db.VarChar(255)
+  nome   String  @unique @db.VarChar(255)
   cursos curso[] @relation("UniversidadeCursos")
 }
 

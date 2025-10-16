@@ -16,6 +16,33 @@ const courseRepository = {
     return prisma.universidade.findMany({});
   },
 
+  criarUniversidade: async (nome: string) => {
+    return prisma.universidade.create({
+      data: { nome },
+    });
+  },
+
+  buscarUniversidadePeloNome: async (nome: string) => {
+    return prisma.universidade.findUnique({
+      where: { nome },
+    });
+  },
+
+  buscarCursoPeloId: async (idCurso: number) => {
+    return prisma.curso.findUnique({
+      where: { id: idCurso },
+      include: {
+        disciplinas: {
+          include: {
+            requisitos: { include: { req: true } }, 
+            dependentes: { include: { dep: true } }, 
+            correquisitos: { include: { correq: true } }, 
+          },
+        },
+      },
+    });
+  },
+
 };
 
 export default courseRepository;

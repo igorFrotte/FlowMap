@@ -19,7 +19,7 @@ export default function App() {
           <Route path="/fluxograma" element={<PrivatePage allowed={["aluno"]}><Fluxograma /></PrivatePage>} />
           <Route path="/planejador" element={<PrivatePage allowed={["aluno"]}><Planejador /></PrivatePage>} />
           <Route path="/admin" element={<PrivatePage allowed={["admin"]}><PainelPrincipal /></PrivatePage>} />
-          <Route path="/adm/curso/:id" element={<PrivatePage allowed={["admin"]}><CadastroCurso /></PrivatePage>} />
+          <Route path="/adm/curso/:idCurso" element={<PrivatePage allowed={["admin"]}><CadastroCurso /></PrivatePage>} />
         </Routes>
       </BrowserRouter>
     </> 

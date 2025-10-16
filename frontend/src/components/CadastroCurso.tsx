@@ -9,15 +9,15 @@ interface Universidade {
 }
 
 interface Disciplina {
-  id?: number;
+  id: number;
   nome: string;
   periodo: number;
-  credito: number;
+  credito?: number;
   dificuldade?: number;
   informacao?: string;
   reqCreditos?: number;
   reqPeriodos?: number;
-  preRequisitos?: string[]; // ids compostos como "periodo-index"
+  preRequisitos?: string[]; 
   coRequisitos?: string[];
 }
 
@@ -34,7 +34,7 @@ interface Curso {
 }
 
 export default function CursoForm() {
-  const { id } = useParams();
+  const { idCurso } = useParams();
   const navigate = useNavigate();
 
   const [curso, setCurso] = useState<Curso>({
@@ -46,15 +46,17 @@ export default function CursoForm() {
   const [error, setError] = useState("");
   const [openIndex, setOpenIndex] = useState<{ periodo: number; disciplina: number } | null>(null);
 
-  // Modal de criação de universidade
   const [modalAberto, setModalAberto] = useState(false);
   const [novaUniversidadeNome, setNovaUniversidadeNome] = useState("");
   const [notificacao, setNotificacao] = useState("");
 
+  const [nextId, setNextId] = useState(0.5);
+
   useEffect(() => {
     carregarUniversidades();
-    // if (id) axiosService.buscarCurso(id).then(res => setCurso(res.data));
-  }, [id]);
+    if (idCurso != "novo") 
+      axiosService.buscarCursoPeloId(Number(idCurso)).then(res => setCurso(res.data));
+  }, [idCurso]);
 
   const carregarUniversidades = async () => {
     try {
@@ -71,20 +73,21 @@ export default function CursoForm() {
     setNovaUniversidadeNome("");
   };
 
-  const criarNovaUniversidade = async () => {
+  const criarNovaUniversidade = () => {
     if (!novaUniversidadeNome.trim()) return;
-    try {
-      //const res = await axiosService.criarUniversidade({ nome: novaUniversidadeNome });
-      carregarUniversidades();
-      //setCurso({ ...curso, idUniversidade: res.data.id });
-      setNotificacao("Universidade criada com sucesso!");
-      fecharModal();
-      setTimeout(() => setNotificacao(""), 3000);
-    } catch (err) {
-      console.error(err);
-      setNotificacao("Erro ao criar universidade.");
-      setTimeout(() => setNotificacao(""), 3000);
-    }
+
+    axiosService
+      .criarUniversidade({nome: novaUniversidadeNome})
+      .then(res => {
+        carregarUniversidades();
+        setCurso(prev => ({ ...prev, idUniversidade: res.data.id }));
+        setNotificacao("Universidade criada com sucesso!");
+        fecharModal();
+      })
+      .catch(err => {
+        console.log(err);
+        setNotificacao("Erro ao criar a Universidade"); //mudar
+      });
   };
 
   const adicionarPeriodo = () => {
@@ -92,15 +95,22 @@ export default function CursoForm() {
     setCurso(prev => ({ ...prev, periodos: [...prev.periodos, novoPeriodo] }));
   };
 
+  const idGenerate = () => {
+    setNextId(nextId + 1);
+    return nextId;
+  };
+
   const adicionarDisciplina = (numPeriodo: number) => {
     const novosPeriodos = [...curso.periodos];
     const periodo = novosPeriodos.find(p => p.numero === numPeriodo);
     if (!periodo) return;
 
+    
     periodo.disciplinas.push({
+      id: idGenerate(),
       nome: "",
       periodo: numPeriodo,
-      credito: 1,
+      credito: undefined,
       dificuldade: undefined,
       informacao: "",
       reqCreditos: undefined,
@@ -134,9 +144,10 @@ export default function CursoForm() {
     try {
       setError("");
       const dados = { ...curso, nPeriodos: curso.periodos.length };
-      // if (id) await axiosService.atualizarCurso(id, dados);
+      console.log(dados);
+      // if (idCurso != "novo") await axiosService.atualizarCurso(id, dados);
       // else await axiosService.criarCurso(dados);
-      navigate("/adm");
+      //navigate("/adm");
     } catch (err) {
       console.error(err);
       setError("Erro ao salvar curso.");
@@ -146,14 +157,14 @@ export default function CursoForm() {
   const getDisciplinaNome = (periodoNum: number, idx: number) => {
     const periodo = curso.periodos.find(p => p.numero === periodoNum);
     if (!periodo) return `Disciplina ${idx}`;
-    const disc = periodo.disciplinas[idx];
-    return disc?.nome || `Disciplina ${idx + 1}`;
+    const disc = periodo.disciplinas.filter((e) => e.id == idx)[0];
+    return disc?.nome || `Disciplina ${idx}`;
   };
 
   return (
     <Container>
       <Form>
-        <Title>{id ? "Editar Curso" : "Novo Curso"}</Title>
+        <Title>{idCurso != "novo" ? "Editar Curso" : "Novo Curso"}</Title>
 
         {error && <ErrorMsg>{error}</ErrorMsg>}
         {notificacao && <Notificacao>{notificacao}</Notificacao>}
@@ -178,7 +189,7 @@ export default function CursoForm() {
         <Button type="button" onClick={abrirModal}>+ Criar Nova Universidade</Button>
 
         <SectionTitle>Períodos</SectionTitle>
-        {curso.periodos.map(p => (
+        {curso?.periodos?.map(p => (
           <PeriodoCard key={p.numero}>
             <PeriodoHeader>Período {p.numero}</PeriodoHeader>
 
@@ -208,13 +219,13 @@ export default function CursoForm() {
                   <AccordionBody>
                     <Input
                       type="text"
-                      placeholder="Nome da disciplina"
+                      placeholder="Nome da Disciplina"
                       value={d.nome}
                       onChange={e => atualizarDisciplina(p.numero, di, "nome", e.target.value)}
                     />
                     <Input
                       type="number"
-                      placeholder="Créditos"
+                      placeholder="Número de Créditos"
                       value={d.credito || ""}
                       onChange={e => atualizarDisciplina(p.numero, di, "credito", +e.target.value)}
                     />
@@ -229,12 +240,6 @@ export default function CursoForm() {
                       <option value={2}>2 - Conceitos fundamentais, introdutórios, baixo esforço</option>
                       <option value={1}>1 - Aprendizado rápido, baixa carga prática ou teórica</option>
                     </Select>
-                    <Input
-                      type="text"
-                      placeholder="Informações extras"
-                      value={d.informacao || ""}
-                      onChange={e => atualizarDisciplina(p.numero, di, "informacao", e.target.value)}
-                    />
                     
                     {/* Requisitos em créditos */}
                     <RequisitoContainer>
@@ -319,8 +324,8 @@ export default function CursoForm() {
                             .filter(pp => pp.numero < p.numero)
                             .flatMap(pp =>
                               pp.disciplinas.map((disc, idx) => (
-                                <option key={`${pp.numero}-${idx}`} value={`${pp.numero}-${idx}`}>
-                                  {`P${pp.numero}: ${disc.nome || `Disciplina ${idx + 1}`}`}
+                                <option key={`${pp.numero}-${disc.id}`} value={`${pp.numero}-${disc.id}`}>
+                                  {`P${pp.numero}: ${disc.nome}`}
                                 </option>
                               ))
                             )}
@@ -374,8 +379,8 @@ export default function CursoForm() {
                           {p.disciplinas
                             .filter((_, idx) => idx !== di)
                             .map((disc, idx) => (
-                              <option key={`co-${p.numero}-${idx}`} value={`${p.numero}-${idx}`}>
-                                {disc.nome || `Disciplina ${idx + 1}`}
+                              <option key={`co-${p.numero}-${disc.id}`} value={`${p.numero}-${disc.id}`}>
+                                {disc.nome}
                               </option>
                             ))}
                         </Select>

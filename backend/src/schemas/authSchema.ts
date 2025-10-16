@@ -16,7 +16,11 @@ export const signUpSchema = z.object({
         .regex(/[a-z]/, "A senha deve conter pelo menos uma letra minúscula.")
         .regex(/\d/, "A senha deve conter pelo menos um número.")
         .regex(/[@$!%*?&]/, "A senha deve conter pelo menos um símbolo especial."),
-    nome: z.string(),
-    idCurso: z.number(),
+    nome: z.string("O nome é obrigatório")
+        .min(2, "O nome deve ter pelo menos 2 caracteres")
+        .max(100, "O nome pode ter no máximo 100 caracteres")
+        .regex(/^[A-Za-zÀ-ÿ\s]+$/, "O nome deve conter apenas letras e espaços")
+        .trim(),
+    idCurso: z.number().int().positive(),
 });
 

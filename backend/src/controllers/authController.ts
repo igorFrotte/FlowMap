@@ -46,11 +46,11 @@ const authController = {
 
   signUp: async (req: Request, res: Response) => {
     try {
-      const { email, nome, idCurso, password } = req.body;
       const validacao = signUpSchema.safeParse(req.body);
       if (!validacao.success)
         return res.status(STATUS_CODE.BAD_REQUEST).json({ error: "Dados inválidos" });
         
+      const { email, nome, idCurso, password } = validacao.data;
       const alunoExistente = await authService.verificarEmail(email);
       if (alunoExistente)
         return res.status(STATUS_CODE.CONFLICT).json({ message: 'Email já cadastrado.' });

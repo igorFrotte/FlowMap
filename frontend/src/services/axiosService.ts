@@ -32,7 +32,7 @@ const axiosService = {
   },
 
   mostrarCursosDaUniversidade: (idUniversidade: number) => {
-    const promise = axios.get(BASE_URL + "cursos/universidade/" + idUniversidade);
+    const promise = axios.get(BASE_URL + "curso/universidade/" + idUniversidade);
     return promise;
   },
 
@@ -43,7 +43,13 @@ const axiosService = {
 
   mostrarCursosDoADM: () => {
     const header = createHeader();
-    const promise = axios.get(BASE_URL + "cursos/adm", header);
+    const promise = axios.get(BASE_URL + "curso/adm", header);
+    return promise;
+  },
+
+  buscarCursoPeloId: ( idCurso: number) => {
+    const header = createHeader();
+    const promise = axios.get(BASE_URL + "curso/" + idCurso, header);
     return promise;
   },
   
@@ -62,6 +68,12 @@ const axiosService = {
   mudarPlanejamento: (body: {idsDisciplinas: number[], periodoPlan: number}[]) => {
     const header = createHeader();
     const promise = axios.patch(BASE_URL + "disciplinas/periodoplan", body, header);
+    return promise;
+  },
+
+  criarUniversidade: (body: {nome: string}) => {
+    const header = createHeader();
+    const promise = axios.post(BASE_URL + "universidade", body, header);
     return promise;
   },
 

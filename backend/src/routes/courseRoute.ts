@@ -5,7 +5,9 @@ import { authADMMiddleware, authMiddleware } from "../middlewares/autoMiddleware
 const courseRouter = Router();
 
 courseRouter.get("/universidade", courseController.listarUniversidades);
-courseRouter.get("/cursos/universidade/:idUniversidade", courseController.cursosDaUniversidade);
-courseRouter.get("/cursos/adm", authMiddleware, authADMMiddleware, courseController.cursosDoADM);
+courseRouter.get("/curso/universidade/:idUniversidade", courseController.cursosDaUniversidade);
+courseRouter.get("/curso/adm", authMiddleware, authADMMiddleware, courseController.cursosDoADM);
+courseRouter.post("/universidade",authMiddleware, authADMMiddleware,  courseController.criarUniversidade);
+courseRouter.get("/curso/:idCurso", authMiddleware, authADMMiddleware, courseController.buscarCursoPeloId );
 
 export default courseRouter;
