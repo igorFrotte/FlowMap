@@ -102,6 +102,12 @@ const axiosService = {
     return promise;
   },
 
+  atualizarCurso: (idCurso : string, body : Curso) => {
+    const header = createHeader();
+    const promise = axios.put(BASE_URL + "curso/" + idCurso, body, header);
+    return promise;
+  },
+
   criarUniversidade: (body: {nome: string}) => {
     const header = createHeader();
     const promise = axios.post(BASE_URL + "universidade", body, header);

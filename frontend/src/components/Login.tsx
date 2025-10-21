@@ -43,7 +43,7 @@ export default function Login() {
       const userType = response.data.tipo;
 
       if (userType === "admin") {
-        navigate("/admin");
+        navigate("/adm");
       } else {
         navigate("/fluxograma");
       }

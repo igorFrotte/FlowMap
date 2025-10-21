@@ -1,7 +1,9 @@
 import { DuplicatedItemError, ForbiddenError, NotFoundError } from "../exceptions/erros.js";
+import prisma from "../prisma/client.js";
 import courseRepository from "../repositories/courseRepository.js";
 import disciplinaRepository from "../repositories/disciplinaRepository.js";
 import type { DisciplinaFormatoCriacao, PeriodoDTO } from "../types/disciplina.js";
+import type { TxClient } from "../types/prisma.js";
 
 const courseService = {
   listarUniversidades: async () => {
@@ -27,11 +29,6 @@ const courseService = {
     if (!curso) throw new NotFoundError("Curso não Existe");
 
     const periodosObj = curso.disciplinas.reduce((acc, d) => {
-
-
-      if(d.correquisitos)
-        console.log(d.correquisitos);
-
       const periodoAtual = acc[d.periodo] || [];
       periodoAtual.push({
         id: d.id,
@@ -63,98 +60,68 @@ const courseService = {
   },
 
   criarCursoCompleto: async (idadm: number, objeto: { idUniversidade: number; nome: string; nPeriodos: number; periodos: PeriodoDTO[] }) => {
-    const { idUniversidade, nome, nPeriodos, periodos } = objeto;
 
-    const cursoCriado = await courseRepository.criarCurso(idadm, idUniversidade, nome, nPeriodos);
-    const idCurso = cursoCriado.id;
-    const dependenciasToCreate: { idDisciplinaDep: number; idTempDisciplinaReq: string }[] = [];
-    const correqsToCreate: { idDisciplina: number; idTempDisciplinaCorreq: string }[] = [];
+    return prisma.$transaction(async (tx) => {
 
-    const tempToRealId = new Map<string, number>();
+      const { idUniversidade, nome, nPeriodos, periodos } = objeto;
+      const cursoCriado = await courseRepository.criarCurso(tx, idadm, idUniversidade, nome, nPeriodos);
+      const idCurso = cursoCriado.id;
+      
+      await vincularDisciplinasAoCurso(tx, idCurso, periodos);
 
-    for (const p of periodos) {
-      for (const d of p.disciplinas) {
-        if (!d) continue;
-
-        const idTemp = `${p.numero}-${d.id}`;
-        const created = await disciplinaRepository.criarDisciplina(idCurso, d);
-        tempToRealId.set(idTemp, created.id);
-
-        d.preRequisitos?.forEach((e: string) =>
-          dependenciasToCreate.push({ idDisciplinaDep: created.id, idTempDisciplinaReq: e })
-        );
-
-        d.coRequisitos?.forEach((e: string) =>
-          correqsToCreate.push({ idDisciplina: created.id, idTempDisciplinaCorreq: e })
-        );
-      }
-    }
-
-    if (dependenciasToCreate.length) 
-      await disciplinaRepository.criarDependencias(dependenciasToCreate, tempToRealId);
-    if (correqsToCreate.length) 
-      await disciplinaRepository.criarCorrequisitos(correqsToCreate, tempToRealId);
-
-    return cursoCriado;
+      return cursoCriado;
+    });
   },
 
-  /* atualizarCursoCompleto: async (idCurso: number, idadm: number, payload: { idUniversidade: number; nome: string; nPeriodos: number; periodos: PeriodoDTO[] }) => {
+  atualizarCursoCompleto: async (idCurso: number, idadm: number, payload: { idUniversidade: number; nome: string; nPeriodos: number; periodos: PeriodoDTO[] }) => {
     const curso = await courseRepository.buscarCursoPeloIdComDisciplinas(idCurso);
     if (!curso) throw new NotFoundError("Curso não existe");
     if (curso.idadm !== idadm) throw new ForbiddenError("Curso não pertence ao ADM");
 
-    await courseRepository.atualizarCurso(idCurso, { nome: payload.nome, iduniversidade: payload.idUniversidade, nperiodos: payload.nPeriodos });
+    return prisma.$transaction(async (tx) => {
 
-    await disciplinaRepository.deletarDisciplinasPorCurso(idCurso);
+      await courseRepository.atualizarCurso(tx, idCurso, { nome: payload.nome, iduniversidade: payload.idUniversidade, nperiodos: payload.nPeriodos });
 
-    const periodos = payload.periodos;
-    const tempToRealId = new Map<string, number>();
+      await disciplinaRepository.deletarDisciplinasPorCurso(tx, idCurso);
 
-    for (const p of periodos) {
-      for (let i = 0; i < (p.disciplinas || []).length; i++) {
-        const d = p.disciplinas[i];
-        const idTemp = `${p.numero}-${i}`;
-        const created = await courseRepository.criarDisciplina(idCurso, {
-          nome: d.nome,
-          periodo: p.numero,
-          credito: d.credito ?? 0,
-          dificuldade: d.dificuldade ?? null,
-          informacao: d.informacao ?? null,
-          reqCreditos: d.reqCreditos ?? null,
-          reqPeriodos: d.reqPeriodos ?? null,
-        });
-        tempToRealId.set(idTemp, created.id);
-      }
-    }
+      const periodos = payload.periodos;
 
-    const dependenciasToCreate: { iddisciplinareq: number; iddisciplinadep: number }[] = [];
-    const correqsToCreate: { iddisciplina: number; iddisciplinacorreq: number }[] = [];
+      await vincularDisciplinasAoCurso(tx, idCurso, periodos);      
 
-    for (const p of periodos) {
-      for (let i = 0; i < (p.disciplinas || []).length; i++) {
-        const d = p.disciplinas[i];
-        const idTemp = `${p.numero}-${i}`;
-        const idReal = tempToRealId.get(idTemp);
-        if (!idReal) continue;
-
-        (d.preRequisitos || []).forEach(pr => {
-          const idReqReal = tempToRealId.get(pr);
-          if (idReqReal) dependenciasToCreate.push({ iddisciplinareq: idReqReal, iddisciplinadep: idReal });
-        });
-
-        (d.coRequisitos || []).forEach(cr => {
-          const idCorReal = tempToRealId.get(cr);
-          if (idCorReal) correqsToCreate.push({ iddisciplina: idReal, iddisciplinacorreq: idCorReal });
-        });
-      }
-    }
-
-    if (dependenciasToCreate.length) await courseRepository.criarDependenciasBulk(dependenciasToCreate);
-    if (correqsToCreate.length) await courseRepository.criarCorrequisitosBulk(correqsToCreate);
-
-    return { message: "Atualizado com sucesso" };
+      return { message: "Atualizado com sucesso" };
+    });
   },
-  */
+
 }; 
+
+const vincularDisciplinasAoCurso = async (tx: TxClient, idCurso: number, periodos: PeriodoDTO[]) => {
+  const dependenciasToCreate: { idDisciplinaDep: number; idTempDisciplinaReq: string }[] = [];
+  const correqsToCreate: { idDisciplina: number; idTempDisciplinaCorreq: string }[] = [];
+
+  const tempToRealId = new Map<string, number>();
+
+  for (const p of periodos) {
+    for (const d of p.disciplinas) {
+      if (!d) continue;
+
+      const idTemp = `${p.numero}-${d.id}`;
+      const created = await disciplinaRepository.criarDisciplina(tx, idCurso, d);
+      tempToRealId.set(idTemp, created.id);
+
+      d.preRequisitos?.forEach((e: string) =>
+        dependenciasToCreate.push({ idDisciplinaDep: created.id, idTempDisciplinaReq: e })
+      );
+
+      d.coRequisitos?.forEach((e: string) =>
+        correqsToCreate.push({ idDisciplina: created.id, idTempDisciplinaCorreq: e })
+      );
+    }
+  }
+
+  if (dependenciasToCreate.length) 
+    await disciplinaRepository.criarDependencias(tx, dependenciasToCreate, tempToRealId);
+  if (correqsToCreate.length) 
+    await disciplinaRepository.criarCorrequisitos(tx, correqsToCreate, tempToRealId);
+}
 
 export default courseService;

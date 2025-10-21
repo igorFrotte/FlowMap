@@ -1,4 +1,6 @@
+import type { PrismaClient } from '../generated/prisma/index.js';
 import prisma from '../prisma/client.js';
+import type { TxClient } from '../types/prisma.js';
 
 const courseRepository = {
   cursosDaUniversidade: async (idUniversidade: number) => {
@@ -35,7 +37,6 @@ const courseRepository = {
         disciplinas: {
           include: {
             requisitos: { include: { req: true } }, 
-            dependentes: { include: { dep: true } }, 
             correquisitos: { include: { correq: true } }, 
           },
         },
@@ -43,8 +44,8 @@ const courseRepository = {
     });
   },
 
-  criarCurso: async (idadm: number, idUniversidade: number, nome: string, nperiodos: number) => {
-    return prisma.curso.create({
+  criarCurso: async (tx: TxClient = prisma, idadm: number, idUniversidade: number, nome: string, nperiodos: number) => {
+    return tx.curso.create({
       data: {
         idadm,
         iduniversidade: idUniversidade,
@@ -54,8 +55,8 @@ const courseRepository = {
     });
   },
 
-  atualizarCurso: async (idCurso: number, data: { nome?: string; iduniversidade?: number; nperiodos?: number }) => {
-    return prisma.curso.update({
+  atualizarCurso: async (tx: TxClient = prisma, idCurso: number, data: { nome?: string; iduniversidade?: number; nperiodos?: number }) => {
+    return tx.curso.update({
       where: { id: idCurso },
       data
     });

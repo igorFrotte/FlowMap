@@ -1,6 +1,6 @@
 import prisma from '../prisma/client.js';
-import { Prisma } from '../generated/prisma/index.js';
 import type { DisciplinaFormatoCriacao } from '../types/disciplina.js';
+import type { TxClient } from '../types/prisma.js';
 
 const disciplinaRepository = {
   
@@ -44,11 +44,11 @@ const disciplinaRepository = {
     return prisma.$transaction(updates);
   },
 
-  disciplinasDoCurso: async (idCurso: number, tx: Prisma.TransactionClient = prisma) => {
+  disciplinasDoCurso: async (tx: TxClient = prisma, idCurso: number) => {
     return tx.disciplina.findMany({ where: { idcurso: idCurso } });
   },
 
-  inserirDisciplinasDoAluno: async (disciplinas: { idAluno: number; idDisciplina: number }[], tx: Prisma.TransactionClient = prisma) => {
+  inserirDisciplinasDoAluno: async (tx: TxClient = prisma, disciplinas: { idAluno: number; idDisciplina: number }[]) => {
     return tx.aluno_disciplina.createMany({
       data: disciplinas.map(d => ({
         idaluno: d.idAluno,
@@ -57,27 +57,8 @@ const disciplinaRepository = {
     });
   },
 
-  criarDisciplinasBulk: async (idCurso: number, disciplinas: Omit<DisciplinaFormatoCriacao, "idTemp">[]) => {
-    return prisma.$transaction(
-      disciplinas.map(d =>
-        prisma.disciplina.create({
-          data: {
-            idcurso: idCurso,
-            nome: d.nome,
-            periodo: d.periodo,
-            credito: d.credito ?? 0,
-            dificuldade: d.dificuldade ?? null,
-            informacao: d.informacao ?? null,
-            reqcreditos: d.reqCreditos ?? null,
-            reqperiodo: d.reqPeriodos ?? null,
-          },
-        })
-      )
-    );
-  },
-
-  criarDisciplina: async (idCurso: number, d: DisciplinaFormatoCriacao) => {
-    return prisma.disciplina.create({
+  criarDisciplina: async (tx: TxClient = prisma, idCurso: number, d: DisciplinaFormatoCriacao) => {
+    return tx.disciplina.create({
       data: {
         idcurso: idCurso,
         nome: d.nome,
@@ -91,35 +72,35 @@ const disciplinaRepository = {
     });
   },
 
-  criarDependencias: async (dependencias: { idDisciplinaDep: number; idTempDisciplinaReq: string }[], tempToRealId: Map<string, number>) => {
+  criarDependencias: async (tx: TxClient = prisma, dependencias: { idDisciplinaDep: number; idTempDisciplinaReq: string }[], tempToRealId: Map<string, number>) => {
     if (!dependencias.length) return [];
-    return prisma.$transaction(
-      dependencias.map(d =>
-        prisma.dependencia.create({
-          data: {
-            iddisciplinareq: tempToRealId.get(d.idTempDisciplinaReq) || 0,
-            iddisciplinadep: d.idDisciplinaDep,
-          },
-        })
-      )
-    );
+
+    const data = dependencias.map((d) => ({
+      iddisciplinadep: d.idDisciplinaDep,
+      iddisciplinareq: tempToRealId.get(d.idTempDisciplinaReq) || 0,
+    }));
+
+    return tx.dependencia.createMany({
+      data,
+      skipDuplicates: true, 
+    });
   },
 
-  criarCorrequisitos: async (corrs: { idDisciplina: number; idTempDisciplinaCorreq: string }[], tempToRealId: Map<string, number>) => {
+  criarCorrequisitos: async (tx: TxClient = prisma, corrs: { idDisciplina: number; idTempDisciplinaCorreq: string }[], tempToRealId: Map<string, number>) => {
     if (!corrs.length) return [];
-    return prisma.$transaction(
-      corrs.map(c =>
-        prisma.correquisito.create({
-          data: {
-            iddisciplina: c.idDisciplina,
-            iddisciplinacorreq: tempToRealId.get(c.idTempDisciplinaCorreq) || 0,
-          },
-        })
-      )
-    );
+
+    const data = corrs.map((c) => ({ 
+      iddisciplina: c.idDisciplina,
+      iddisciplinacorreq: tempToRealId.get(c.idTempDisciplinaCorreq) || 0,
+    }));
+
+    return tx.correquisito.createMany({
+      data,
+      skipDuplicates: true,
+    });
   },
 
-  deletarDisciplinasPorCurso: async (idCurso: number) => {
+  deletarDisciplinasPorCurso: async (tx: TxClient = prisma, idCurso: number) => {
     return prisma.disciplina.deleteMany({
       where: { idcurso: idCurso },
     });

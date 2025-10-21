@@ -1,5 +1,6 @@
 import prisma from '../prisma/client.js';
 import { Prisma } from '../generated/prisma/index.js';
+import type { TxClient } from '../types/prisma.js';
 
 const authRepository = {
 
@@ -15,7 +16,7 @@ const authRepository = {
     });
   },
 
-  criarAluno: async (email: string, nome: string, idCurso: number, senha: string, tx: Prisma.TransactionClient = prisma) => {
+  criarAluno: async (tx: TxClient = prisma, email: string, nome: string, idCurso: number, senha: string) => {
     return tx.aluno.create({
       data: { email, nome, idcurso: idCurso, senha },
     });

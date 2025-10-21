@@ -3,6 +3,7 @@ import courseService from "../services/courseService.js";
 import { idSchema, nomeSchema } from "../schemas/basicSchema.js";
 import { STATUS_CODE } from "../enums/statusCode.js";
 import { DuplicatedItemError, NotFoundError } from "../exceptions/erros.js";
+import { criarCursoBodySchema } from "../schemas/disciplinaSchema.js";
 
 const courseController = {
   listarUniversidades: async (_req: Request, res: Response) => {
@@ -77,7 +78,6 @@ const courseController = {
           .json({ error: JSON.parse(validacao.error.message)[0].message }); 
 
       const curso = await courseService.cursoPeloId(validacao.data.id);
-      console.log(curso);
       return res.status(STATUS_CODE.CREATED).json(curso);
     } catch (error) {
       console.error(error);
@@ -93,9 +93,14 @@ const courseController = {
 
   criarCurso: async (req: Request, res: Response) => {
     const idadm = res.locals.userId;
-    const payload = req.body; //                          validar o body
+    try {      
+      const parsed = criarCursoBodySchema.safeParse(req.body);
+      if (!parsed.success)
+        return res
+          .status(STATUS_CODE.BAD_REQUEST)
+          .json({ error: JSON.parse(parsed.error.message)[0].message }); 
 
-    try {
+      const payload = parsed.data as any;
       const curso = await courseService.criarCursoCompleto(idadm, payload);
       return res.status(STATUS_CODE.CREATED).json(curso);
     } catch (err) {
@@ -105,16 +110,22 @@ const courseController = {
   },
 
   atualizarCurso: async (req: Request, res: Response) => {
-    const idCurso = Number(req.params.idCurso);
     const idadm = res.locals.userId;
-    const payload = req.body;
-
-    if (isNaN(idCurso)) {
-      return res.status(STATUS_CODE.BAD_REQUEST).json({ erro: "ID do curso inválido" });
-    }
-
     try {
-      const resultado = {}//await courseService.atualizarCursoCompleto(idCurso, idadm, payload);
+      const validacao = idSchema.safeParse({ id: Number(req.params.idCurso) });
+      if (!validacao.success)
+        return res
+          .status(STATUS_CODE.BAD_REQUEST)
+          .json({ error: JSON.parse(validacao.error.message)[0].message }); 
+      
+      const parsed = criarCursoBodySchema.safeParse(req.body);
+      if (!parsed.success)
+        return res
+          .status(STATUS_CODE.BAD_REQUEST)
+          .json({ error: JSON.parse(parsed.error.message)[0].message }); 
+
+      const payload = parsed.data as any;
+      const resultado = await courseService.atualizarCursoCompleto(validacao.data.id, idadm, payload);
       return res.status(STATUS_CODE.OK).json(resultado);
     } catch (err: any) {
       console.error(err);

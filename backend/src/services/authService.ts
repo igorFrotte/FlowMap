@@ -26,16 +26,16 @@ const authService = {
 
   criarAluno: async (email: string, nome: string, idCurso: number, senha: string) => {
     return prisma.$transaction(async (tx) => {
-      const aluno = await authRepository.criarAluno(email, nome, idCurso, senha, tx);
+      const aluno = await authRepository.criarAluno(tx, email, nome, idCurso, senha);
 
-      const disciplinas = await disciplinaRepository.disciplinasDoCurso(idCurso, tx);
+      const disciplinas = await disciplinaRepository.disciplinasDoCurso(tx, idCurso);
 
       const disciplinasAluno = disciplinas.map(d => ({
         idAluno: aluno.id,
         idDisciplina: d.id,
       }));
 
-      await disciplinaRepository.inserirDisciplinasDoAluno(disciplinasAluno, tx);
+      await disciplinaRepository.inserirDisciplinasDoAluno(tx, disciplinasAluno);
 
       return aluno;
     });
