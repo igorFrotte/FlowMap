@@ -28,7 +28,7 @@ const courseRepository = {
     });
   },
 
-  buscarCursoPeloId: async (idCurso: number) => {
+  buscarCursoPeloIdComDisciplinas: async (idCurso: number) => {
     return prisma.curso.findUnique({
       where: { id: idCurso },
       include: {
@@ -43,6 +43,23 @@ const courseRepository = {
     });
   },
 
+  criarCurso: async (idadm: number, idUniversidade: number, nome: string, nperiodos: number) => {
+    return prisma.curso.create({
+      data: {
+        idadm,
+        iduniversidade: idUniversidade,
+        nome,
+        nperiodos,
+      },
+    });
+  },
+
+  atualizarCurso: async (idCurso: number, data: { nome?: string; iduniversidade?: number; nperiodos?: number }) => {
+    return prisma.curso.update({
+      where: { id: idCurso },
+      data
+    });
+  },
 };
 
 export default courseRepository;

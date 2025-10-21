@@ -9,5 +9,8 @@ courseRouter.get("/curso/universidade/:idUniversidade", courseController.cursosD
 courseRouter.get("/curso/adm", authMiddleware, authADMMiddleware, courseController.cursosDoADM);
 courseRouter.post("/universidade",authMiddleware, authADMMiddleware,  courseController.criarUniversidade);
 courseRouter.get("/curso/:idCurso", authMiddleware, authADMMiddleware, courseController.buscarCursoPeloId );
+courseRouter.post("/curso", authMiddleware, authADMMiddleware, courseController.criarCurso);
+courseRouter.put("/curso/:idCurso", authMiddleware, authADMMiddleware, courseController.atualizarCurso);
+
 
 export default courseRouter;

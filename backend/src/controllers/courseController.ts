@@ -89,6 +89,46 @@ const courseController = {
     }
   },
 
+
+
+  criarCurso: async (req: Request, res: Response) => {
+    const idadm = res.locals.userId;
+    const payload = req.body; //                          validar o body
+
+    try {
+      const curso = await courseService.criarCursoCompleto(idadm, payload);
+      return res.status(STATUS_CODE.CREATED).json(curso);
+    } catch (err) {
+      console.error(err);
+      return res.status(STATUS_CODE.SERVER_ERROR).json({ erro: "Erro ao criar curso" });
+    }
+  },
+
+  atualizarCurso: async (req: Request, res: Response) => {
+    const idCurso = Number(req.params.idCurso);
+    const idadm = res.locals.userId;
+    const payload = req.body;
+
+    if (isNaN(idCurso)) {
+      return res.status(STATUS_CODE.BAD_REQUEST).json({ erro: "ID do curso inválido" });
+    }
+
+    try {
+      const resultado = {}//await courseService.atualizarCursoCompleto(idCurso, idadm, payload);
+      return res.status(STATUS_CODE.OK).json(resultado);
+    } catch (err: any) {
+      console.error(err);
+      if (err.name === "NotFoundError") {
+        return res.status(STATUS_CODE.NOT_FOUND).json({ erro: err.message });
+      }
+      if (err.name === "ForbiddenError") {
+        return res.status(STATUS_CODE.FORBIDDEN).json({ erro: err.message });
+      }
+      return res.status(STATUS_CODE.SERVER_ERROR).json({ erro: "Erro ao atualizar curso" });
+    }
+  },
+
+
 };
 
 export default courseController;

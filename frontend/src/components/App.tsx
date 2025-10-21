@@ -18,7 +18,7 @@ export default function App() {
           <Route path="/cadastro" element={<CadastroAluno />} />
           <Route path="/fluxograma" element={<PrivatePage allowed={["aluno"]}><Fluxograma /></PrivatePage>} />
           <Route path="/planejador" element={<PrivatePage allowed={["aluno"]}><Planejador /></PrivatePage>} />
-          <Route path="/admin" element={<PrivatePage allowed={["admin"]}><PainelPrincipal /></PrivatePage>} />
+          <Route path="/adm" element={<PrivatePage allowed={["admin"]}><PainelPrincipal /></PrivatePage>} />
           <Route path="/adm/curso/:idCurso" element={<PrivatePage allowed={["admin"]}><CadastroCurso /></PrivatePage>} />
         </Routes>
       </BrowserRouter>

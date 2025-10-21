@@ -9,6 +9,31 @@ interface FlowMap {
   token: string;
 }
 
+interface Disciplina {
+  id: number;
+  nome: string;
+  periodo: number;
+  credito?: number;
+  dificuldade?: number;
+  informacao?: string;
+  reqCreditos?: number;
+  reqPeriodos?: number;
+  preRequisitos?: string[]; 
+  coRequisitos?: string[];
+}
+
+interface Periodo {
+  numero: number;
+  disciplinas: Disciplina[];
+}
+
+interface Curso {
+  id?: number;
+  nome: string;
+  idUniversidade: number;
+  periodos: Periodo[];
+}
+
 const axiosService = {
   signUp: (body: {email: string, password: string, nome: string, idCurso: number}) => {
     const promise = axios.post(BASE_URL + "sign-up", body);
@@ -68,6 +93,12 @@ const axiosService = {
   mudarPlanejamento: (body: {idsDisciplinas: number[], periodoPlan: number}[]) => {
     const header = createHeader();
     const promise = axios.patch(BASE_URL + "disciplinas/periodoplan", body, header);
+    return promise;
+  },
+
+  criarCurso: (body : Curso) => {
+    const header = createHeader();
+    const promise = axios.post(BASE_URL + "curso", body, header);
     return promise;
   },
 

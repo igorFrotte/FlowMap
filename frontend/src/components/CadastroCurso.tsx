@@ -55,7 +55,7 @@ export default function CursoForm() {
   useEffect(() => {
     carregarUniversidades();
     if (idCurso != "novo") 
-      axiosService.buscarCursoPeloId(Number(idCurso)).then(res => setCurso(res.data));
+      axiosService.buscarCursoPeloId(Number(idCurso)).then(res => {setCurso(res.data); console.log(res.data)});
   }, [idCurso]);
 
   const carregarUniversidades = async () => {
@@ -148,6 +148,7 @@ export default function CursoForm() {
       // if (idCurso != "novo") await axiosService.atualizarCurso(id, dados);
       // else await axiosService.criarCurso(dados);
       //navigate("/adm");
+      await axiosService.criarCurso(dados);
     } catch (err) {
       console.error(err);
       setError("Erro ao salvar curso.");
