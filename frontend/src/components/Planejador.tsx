@@ -107,7 +107,6 @@ export default function Planejador() {
     {}
   );
   const [iniciado, setIniciado] = useState(false);
-
   const [planoAnterior, setPlanoAnterior] = useState<Disciplina[][]>([]);
 
   useEffect(() => {
@@ -133,7 +132,7 @@ export default function Planejador() {
       .catch((e) => console.log(e.message));
   }, []);
 
-  /* Função genérica para iniciar/reiniciar planejamento */
+  /* ------------------ REINICIAR PLANEJAMENTO ------------------ */
   const resetPlanejamento = () => {
     axiosService
       .mostrarDisciplinasDoAluno()
@@ -149,13 +148,25 @@ export default function Planejador() {
           0
         );
 
+        const periodoOK = (disciplina: Disciplina): boolean => {
+          if (!disciplina.reqperiodo) return true;
+
+          const reqPeriodo = disciplina.reqperiodo;
+
+          const disciplinasRequeridas = todas.filter(
+            (d) => d.periodo <= reqPeriodo
+          );
+          return disciplinasRequeridas.every((d) => d.aprovado);
+        };
+
         const iniciais = naoAprovadas.filter((d) => {
           const requisitosOK = d.requisitos.every((r) =>
             aprovadasIds.includes(r.id)
           );
           const creditosOK =
             !d.reqcreditos || creditosConcluidos >= d.reqcreditos;
-          return requisitosOK && creditosOK;
+          const periodoPermitido = periodoOK(d);
+          return requisitosOK && creditosOK && periodoPermitido;
         });
 
         const bloqueadas = naoAprovadas.filter((d) => {
@@ -164,7 +175,8 @@ export default function Planejador() {
           );
           const creditosOK =
             !d.reqcreditos || creditosConcluidos >= d.reqcreditos;
-          return !(requisitosOK && creditosOK);
+          const periodoPermitido = periodoOK(d);
+          return !(requisitosOK && creditosOK && periodoPermitido);
         });
 
         setBacklog(iniciais);
@@ -177,7 +189,7 @@ export default function Planejador() {
       .catch((e) => console.log(e.message));
   };
 
-  /* Função de drag & drop */
+  /* ------------------ DRAG & DROP ------------------ */
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over) return;
@@ -245,63 +257,132 @@ export default function Planejador() {
     setPlan(newPlan);
   };
 
-  /* Adicionar novo período e bloquear o anterior */
+  /* ------------------ ADICIONAR NOVO PERÍODO ------------------ */
   const addPeriodo = () => {
-    const lastIdx = plan.length - 1;
-    const newBloqueados = [...bloqueados];
-    newBloqueados[lastIdx] = true;
-    setBloqueados(newBloqueados);
+  // 🔹 Pega o último período planejado
+  const lastPeriodo = plan[plan.length - 1];
+  if (!lastPeriodo || lastPeriodo.length === 0) {
+    alert("Você precisa adicionar disciplinas antes de criar um novo período.");
+    return;
+  }
 
-    const disciplinasAlocadasIds = plan.flat().map((d) => d.id);
-    const disciplinasCumpridasIds = [
-      ...disciplinasAlocadasIds,
-      ...Object.values(disciplinas)
-        .filter((d) => d.aprovado)
-        .map((d) => d.id),
-    ];
-    const todasNaoAprovadas = Object.values(disciplinas).filter(
-      (d) => !d.aprovado
-    ) as Disciplina[];
+  // 🔹 Pega IDs de disciplinas cursadas (aprovadas)
+  const idsAprovadas = Object.values(disciplinas)
+    .filter((d) => d.aprovado)
+    .map((d) => d.id);
 
-    const creditosCumpridos = Object.values(disciplinas)
-      .filter((d) => d.aprovado || disciplinasAlocadasIds.includes(d.id))
-      .reduce((acc, d) => acc + d.credito, 0);
+  // 🔹 Pega IDs de disciplinas já planejadas em períodos anteriores
+  const idsPlanejadosAntes = plan
+    .slice(0, -1)
+    .flat()
+    .map((d) => d.id);
 
-    const novasDisciplinas = todasNaoAprovadas.filter((d) => {
-      const requisitosOK = d.requisitos.every((r) =>
-        disciplinasCumpridasIds.includes(r.id)
+  // 🔹 Conjunto de disciplinas disponíveis (aprovadas + anteriores)
+  const idsDisponiveis = [...new Set([...idsAprovadas, ...idsPlanejadosAntes])];
+
+  // 🔹 Verifica cada disciplina do último período
+  for (const disc of lastPeriodo) {
+    if (disc.correquisitos.length > 0) {
+      const idsCorreq = disc.correquisitos.map((c) => c.id);
+
+      const correqOK = idsCorreq.every(
+        (id) =>
+          idsDisponiveis.includes(id) || // já cursada ou planejada antes
+          lastPeriodo.some((d) => d.id === id) // ou está no mesmo período
       );
-      const creditosOK = !d.reqcreditos || creditosCumpridos >= d.reqcreditos;
-      return !disciplinasAlocadasIds.includes(d.id) && requisitosOK && creditosOK;
-    });
 
-    const bloqueadas = todasNaoAprovadas.filter((d) => {
-      const requisitosOK = d.requisitos.every((r) =>
-        disciplinasCumpridasIds.includes(r.id)
-      );
-      const creditosOK = !d.reqcreditos || creditosCumpridos >= d.reqcreditos;
-      return (
-        !disciplinasAlocadasIds.includes(d.id) && !(requisitosOK && creditosOK)
-      );
-    });
+      if (!correqOK) {
+        alert(
+          `A disciplina "${disc.nome}" possui correquisitos que não estão no mesmo período ou ainda não foram cursados.`
+        );
+        return; // Impede a criação do novo período
+      }
+    }
+  }
 
-    setBacklog(novasDisciplinas);
-    setBacklogTotal(bloqueadas);
-    setPlan([...plan, []]);
-    setBloqueados([...newBloqueados, false]);
-  };
+  // 🔹 Se passou na verificação, continua normalmente
+  const lastIdx = plan.length - 1;
+  const newBloqueados = [...bloqueados];
+  newBloqueados[lastIdx] = true;
+  setBloqueados(newBloqueados);
 
+  const disciplinasAlocadasIds = plan.flat().map((d) => d.id);
+  const disciplinasCumpridasIds = [
+    ...disciplinasAlocadasIds,
+    ...Object.values(disciplinas)
+      .filter((d) => d.aprovado)
+      .map((d) => d.id),
+  ];
+  const todasNaoAprovadas = Object.values(disciplinas).filter(
+    (d) => !d.aprovado
+  ) as Disciplina[];
+
+  const creditosCumpridos = Object.values(disciplinas)
+    .filter((d) => d.aprovado || disciplinasAlocadasIds.includes(d.id))
+    .reduce((acc, d) => acc + d.credito, 0);
+
+  const novasDisciplinas = todasNaoAprovadas.filter((d) => {
+    const requisitosOK = d.requisitos.every((r) =>
+      disciplinasCumpridasIds.includes(r.id)
+    );
+
+    const creditosOK = !d.reqcreditos || creditosCumpridos >= d.reqcreditos;
+
+    const reqPeriodoOK =
+      typeof d.reqperiodo !== "number"
+        ? true
+        : Object.values(disciplinas)
+            .filter((disc) => disc.periodo <= d.reqperiodo!)
+            .every(
+              (disc) =>
+                disc.aprovado || disciplinasAlocadasIds.includes(disc.id)
+            );
+
+    return (
+      !disciplinasAlocadasIds.includes(d.id) &&
+      requisitosOK &&
+      creditosOK &&
+      reqPeriodoOK
+    );
+  });
+
+  const bloqueadas = todasNaoAprovadas.filter((d) => {
+    const requisitosOK = d.requisitos.every((r) =>
+      disciplinasCumpridasIds.includes(r.id)
+    );
+
+    const creditosOK = !d.reqcreditos || creditosCumpridos >= d.reqcreditos;
+
+    const reqPeriodoOK =
+      typeof d.reqperiodo !== "number"
+        ? true
+        : Object.values(disciplinas)
+            .filter((disc) => disc.periodo <= d.reqperiodo!)
+            .every((disc) => disc.aprovado);
+
+    return (
+      !disciplinasAlocadasIds.includes(d.id) &&
+      !(requisitosOK && creditosOK && reqPeriodoOK)
+    );
+  });
+
+  setBacklog(novasDisciplinas);
+  setBacklogTotal(bloqueadas);
+  setPlan([...plan, []]);
+  setBloqueados([...newBloqueados, false]);
+};
+
+
+  /* ------------------ SALVAR PLANEJAMENTO ------------------ */
   const salvarPlanejamento = () => {
     if (backlog.length === 0 && backlogTotal.length === 0) {
-      let objs = plan.map((el, i) => {
-        let obj = {
-          idsDisciplinas: el.map((e) => e.id),
-          periodoPlan: i + 1,
-        };
-        return obj;
-      });
-      const promise = axiosService.mudarPlanejamento(objs);
-      promise
+      let objs = plan.map((el, i) => ({
+        idsDisciplinas: el.map((e) => e.id),
+        periodoPlan: i + 1,
+      }));
+
+      axiosService
+        .mudarPlanejamento(objs)
         .then(() => {
           alert("Planejamento salvo!");
           setIniciado(false);
@@ -343,6 +424,7 @@ export default function Planejador() {
     }
   };
 
+  /* ------------------ RENDERIZAÇÃO ------------------ */
   if (!iniciado) {
     return (
       <div>
@@ -400,7 +482,7 @@ export default function Planejador() {
                     : "Requisito: " + d.requisitos.map((r) => r.nome).join(", ")
                 }
               >
-                {d.nome + " |       | " + d.periodo}
+                {d.nome + " | " + d.periodo}
               </span>
             </DraggableItem>
           ))}
@@ -409,7 +491,7 @@ export default function Planejador() {
         <DroppableColumn id="backlog" title="Backlog">
           {backlog.map((d) => (
             <DraggableItem key={d.id} id={`backlog-${d.id}`}>
-              {d.nome + " |       | " + d.periodo}
+              {d.nome + " | " + d.periodo}
             </DraggableItem>
           ))}
         </DroppableColumn>
@@ -427,12 +509,13 @@ export default function Planejador() {
                 id={`periodo-${idx}-${d.id}`}
                 disabled={bloqueados[idx]}
               >
-                {d.nome + " |       | " + d.periodo}
+                {d.nome + " | " + d.periodo}
               </DraggableItem>
             ))}
           </DroppableColumn>
         ))}
       </DndContext>
+
       <div style={{ width: "100%", marginTop: "20px" }}>
         <button onClick={addPeriodo}>+ Adicionar Período</button>
         <button onClick={salvarPlanejamento} style={{ marginLeft: "10px" }}>

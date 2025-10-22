@@ -91,7 +91,16 @@ export default function CursoForm() {
   };
 
   const adicionarPeriodo = () => {
-    const novoPeriodo = { numero: curso.periodos.length + 1, disciplinas: [] };
+    const qtdPeriodos = curso.periodos.length;
+    if (qtdPeriodos > 0) {
+      const ultimoPeriodo = curso.periodos[qtdPeriodos - 1];
+      if (ultimoPeriodo.disciplinas.length === 0) {
+        setNotificacao("O período anterior deve ter pelo menos uma disciplina antes de adicionar outro.");
+        return;
+      }
+    }
+
+    const novoPeriodo = { numero: qtdPeriodos + 1, disciplinas: [] };
     setCurso(prev => ({ ...prev, periodos: [...prev.periodos, novoPeriodo] }));
   };
 
@@ -135,15 +144,40 @@ export default function CursoForm() {
     const novosPeriodos = [...curso.periodos];
     const periodo = novosPeriodos.find(p => p.numero === numPeriodo);
     if (!periodo) return;
+
+    const disciplinaRemovida = periodo.disciplinas[index];
+
+    // Remove a disciplina do período
     periodo.disciplinas.splice(index, 1);
+
+    // Remove como pré e co-requisito em todas as disciplinas
+    novosPeriodos.forEach(p => {
+      p.disciplinas.forEach(d => {
+        if (d.preRequisitos) {
+          d.preRequisitos = d.preRequisitos.filter(
+            idComp => idComp !== `${numPeriodo}-${disciplinaRemovida.id}`
+          );
+        }
+        if (d.coRequisitos) {
+          d.coRequisitos = d.coRequisitos.filter(
+            idComp => idComp !== `${numPeriodo}-${disciplinaRemovida.id}`
+          );
+        }
+      });
+    });
+
     setCurso({ ...curso, periodos: novosPeriodos });
+
+    // Fecha o accordion caso a disciplina aberta seja removida
     if (openIndex?.periodo === numPeriodo && openIndex?.disciplina === index) setOpenIndex(null);
   };
+
 
   const salvarCurso = async () => {
     try {
       setError("");
       const dados = { ...curso, nPeriodos: curso.periodos.length };
+      console.log(dados)
       if (idCurso != "novo") await axiosService.atualizarCurso(idCurso || "", dados);
       else await axiosService.criarCurso(dados);
       navigate("/adm");
@@ -159,6 +193,13 @@ export default function CursoForm() {
     const disc = periodo.disciplinas.filter((e) => e.id == idx)[0];
     return disc?.nome || `Disciplina ${idx}`;
   };
+
+  const removerUltimoPeriodo = () => {
+    if (curso.periodos.length === 0) return;
+    const novosPeriodos = curso.periodos.slice(0, -1); 
+    setCurso({ ...curso, periodos: novosPeriodos });
+  };
+
 
   return (
     <Container>
@@ -190,7 +231,19 @@ export default function CursoForm() {
         <SectionTitle>Períodos</SectionTitle>
         {curso?.periodos?.map(p => (
           <PeriodoCard key={p.numero}>
-            <PeriodoHeader>Período {p.numero}</PeriodoHeader>
+            <PeriodoHeader>
+              <div>Período {p.numero}</div>
+              {p.numero === curso.periodos.length && (
+                <RemoveButton
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removerUltimoPeriodo();
+                      }}
+                    >
+                      ✕
+                </RemoveButton>
+              )}
+            </PeriodoHeader>
 
             {p.disciplinas.map((d, di) => (
               <DisciplinaCard key={di}>
@@ -509,9 +562,11 @@ const PeriodoCard = styled.div`
 `;
 
 const PeriodoHeader = styled.h4`
+  display: flex;
+  justify-content: space-between;
   font-weight: bold;
-  font-size: 1.1rem;
-  margin-bottom: 0.5rem;
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
 `;
 
 const DisciplinaCard = styled.div`
