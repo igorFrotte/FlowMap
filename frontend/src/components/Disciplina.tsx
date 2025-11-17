@@ -24,40 +24,57 @@ interface DisciplinaFuncs {
 }
 
 interface SubProps {
-  $borda?: string;
   $aprovado?: boolean;
+}
+
+interface Container {
+  $borda?: string;
 }
 
 export default function Disciplina( {disciplina, click, funcaoDependencia} : DisciplinaFuncs) {
 
   return (
-    <Container>
-      {disciplina.requisitos.length? <p className="before" onClick={() => funcaoDependencia(disciplina.requisitos, "requisitos")}>{"<-"}</p>: ""}
-      {disciplina.dependentes.length? <p className="after" onClick={() => funcaoDependencia(disciplina.dependentes, "dependentes")}>{"->"}</p> : ""}
+    <Container $borda={disciplina.borda}>
+      {disciplina.requisitos.length? <Dep className="before" onClick={() => funcaoDependencia(disciplina.requisitos, "requisitos")}>{"<"}</Dep>: <div></div>}
       {disciplina.informacao? <p className="desc" onClick={() => alert(disciplina.informacao)}>{"i"}</p> : ""}
-      <Sub onClick={() => click(disciplina.id)} $borda={disciplina.borda} $aprovado={disciplina.aprovado}>
+      <Sub onClick={() => click(disciplina.id)} $aprovado={disciplina.aprovado}>
         {disciplina.nome}
       </Sub>
+      {disciplina.dependentes.length? <Dep className="after" onClick={() => funcaoDependencia(disciplina.dependentes, "dependentes")}>{">"}</Dep> : <div></div>}
     </Container> 
   );
 }
 
+const Dep = styled.div`
+  width: 15px;
+  height: 100%;
+  cursor: pointer;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
 const Sub = styled.div<SubProps>`
-  border: 5px ${props => (props.$borda? (props.$borda === "deps"? "#4980d3" : "#f2da23") : "black")} solid;
-  padding: 5px;
-  border-radius: 10px;
-  width: 150px;
-  height: 100px;
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 14px;
-  cursor: pointer;
-  background-color: ${props => (props.$aprovado? "#ccc" : "#fff")};
+  font-size: 15px;
+  height: 100%;
+  width: 100%;
+  padding: 5px;
+  background-color: ${props => (props.$aprovado? "#d5e2f1" : "#eceef3")};
 `;
 
-const Container = styled.div`
+const Container = styled.div<Container>`
+  border-radius: 5px;
+  width: 150px;
+  height: 100px;
   position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 5px ${props => (props.$borda? (props.$borda === "deps"? "#4e4593" : "#e1ce3b") : "#5c8ec8")} solid;
 
   & > p {
     position: absolute;
@@ -70,17 +87,15 @@ const Container = styled.div`
   }
 
   .before {
-    left: 5px;
-    background-color: #a5a;
+    background-color: #a8c4e1;
   }
 
   .after {
-    right: 5px;
-    background-color: #aa5;
+    background-color: #a8c4e1;
   }
 
   .desc {
     left: calc(50% - 8px);
-    background-color: #5aa;
+    background-color: #5584aa;
   }
 `;

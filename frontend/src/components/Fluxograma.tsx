@@ -99,8 +99,7 @@ export default function Fluxograma() {
   function freeSubs(){}
   
   return (
-    <>
-      iniciando TSX
+    <Page>
       <Container>
         {disciplinasPorPeriodo().map((d,ind) => {       
           return <div key={ind}>
@@ -111,12 +110,19 @@ export default function Fluxograma() {
       </Container> 
       <Menu>
         <div>
-          <button onClick={() => freeSubs()}>Livres</button>
+          {/* <button onClick={() => freeSubs()}>Livres</button> */}
         </div>
       </Menu>
-    </>
+    </Page>
   );
 }
+
+const Page = styled.div`
+  background-color: #d5e2f1;
+  width: 100%;
+  height: 100vh;
+  font-family: "Nunito", sans-serif;
+`;
 
 const Container = styled.div`
   display: flex;
@@ -145,7 +151,7 @@ const Menu = styled.div`
   button {
     width: 100px;
     height: 50px;
-    background-color: #373;
+    background-color: #b5dded;
     cursor: pointer;
     border-radius: 10px;
     margin: 0 10px;

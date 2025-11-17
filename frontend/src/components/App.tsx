@@ -7,10 +7,12 @@ import Login from "./Login";
 import CadastroAluno from "./CadastroAluno";
 import CadastroCurso from "./CadastroCurso";
 import PainelPrincipal from "./PainelPrincipal";
+import GlobalStyle from "../common/GlobalStyle";
 
 export default function App() {
   return (
     <>
+      <GlobalStyle />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Home />} />

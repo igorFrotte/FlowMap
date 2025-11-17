@@ -1,8 +1,14 @@
+import styled from "styled-components";
 
 export default function Header() {
   return (
-    <div>
+    <HeaderComp>
       Header
-    </div>
+    </HeaderComp>
   );
 }
+
+const HeaderComp = styled.div`
+  background-color: #0056b3;
+  height: 60px;
+`;
