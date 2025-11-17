@@ -2,6 +2,7 @@ import { styled } from "styled-components";
 import Disciplina from "./Disciplina";
 import { useEffect, useState } from "react";
 import axiosService from "../services/axiosService";
+import { Link } from "react-router-dom";
 
 interface Disciplina {
   id: number;
@@ -109,9 +110,8 @@ export default function Fluxograma() {
         })}
       </Container> 
       <Menu>
-        <div>
-          {/* <button onClick={() => freeSubs()}>Livres</button> */}
-        </div>
+          <button onClick={() => freeSubs()}>Livres</button>
+          <Link to="/planejador"><button>Planejador</button></Link>
       </Menu>
     </Page>
   );
@@ -121,7 +121,9 @@ const Page = styled.div`
   background-color: #d5e2f1;
   width: 100%;
   height: 100vh;
-  font-family: "Nunito", sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 `;
 
 const Container = styled.div`
@@ -139,21 +141,18 @@ const Container = styled.div`
 
 const Menu = styled.div`
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
   margin-bottom: 10px;
-
-  div {
-    margin-bottom: 10px;
-  }
+  gap: 20px;
 
   button {
-    width: 100px;
+    color: white;
+    width: 130px;
     height: 50px;
-    background-color: #b5dded;
+    background-color: #0056b3;
     cursor: pointer;
     border-radius: 10px;
-    margin: 0 10px;
+    font-size: 15px;
   }
 `;

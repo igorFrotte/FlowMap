@@ -36,7 +36,7 @@ export default function Disciplina( {disciplina, click, funcaoDependencia} : Dis
   return (
     <Container $borda={disciplina.borda}>
       {disciplina.requisitos.length? <Dep className="before" onClick={() => funcaoDependencia(disciplina.requisitos, "requisitos")}>{"<"}</Dep>: <div></div>}
-      {disciplina.informacao? <p className="desc" onClick={() => alert(disciplina.informacao)}>{"i"}</p> : ""}
+      {disciplina.informacao? <p className="desc" title={disciplina.informacao}>{"i"}</p> : ""}
       <Sub onClick={() => click(disciplina.id)} $aprovado={disciplina.aprovado}>
         {disciplina.nome}
       </Sub>
@@ -59,10 +59,11 @@ const Sub = styled.div<SubProps>`
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 15px;
+  font-size: 14px;
   height: 100%;
   width: 100%;
   padding: 5px;
+  cursor: pointer;
   background-color: ${props => (props.$aprovado? "#d5e2f1" : "#eceef3")};
 `;
 

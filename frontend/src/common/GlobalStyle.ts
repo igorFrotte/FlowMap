@@ -28,6 +28,7 @@ footer, header, hgroup, menu, nav, section {
 }
 body {
  line-height: 1;
+ font-family: "Nunito", sans-serif;
 }
 ol, ul {
  list-style: none;
@@ -44,41 +45,11 @@ table {
  border-collapse: collapse;
  border-spacing: 0;
 }
+button {
+  border: 0;
+}
 *{
     box-sizing: border-box;   
-}
-
-.swal-overlay {
-  background-color: rgba(0, 0, 0, 0.7);
-}
-
-.swal-modal {
-    box-shadow: 0px 4px 4px rgba(0, 0, 0, 1);
-    border-radius: 5px;
-}
-
-.swal-title {
-    font-family: "Passion One", cursive;
-    margin: 0px;
-    font-size: 50px;
-    line-height: 50px;
-    letter-spacing: 0.05em;
-    margin-bottom: 30px;
-    color: #000000;
-}
-
-.swal-text {
-  font-family: "Lato", sans-serif;
-  color: #000000;
-  margin-top: 10px;
-  text-align: center;
-}
-
-.swal-button {
-  border-radius: 2px;
-  background-color: #1877f2;
-  font-size: 15px;
-  font-family: "Oswald", sans-serif;
 }
 `;
 
