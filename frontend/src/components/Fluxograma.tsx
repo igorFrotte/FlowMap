@@ -96,8 +96,6 @@ export default function Fluxograma() {
     });
     setDependencias([...dep]);
   }
-
-  function freeSubs(){}
   
   return (
     <Page>
@@ -110,7 +108,6 @@ export default function Fluxograma() {
         })}
       </Container> 
       <Menu>
-          <button onClick={() => freeSubs()}>Livres</button>
           <Link to="/planejador"><button>Planejador</button></Link>
       </Menu>
     </Page>

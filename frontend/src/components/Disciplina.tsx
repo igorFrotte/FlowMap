@@ -25,6 +25,7 @@ interface DisciplinaFuncs {
 
 interface SubProps {
   $aprovado?: boolean;
+  $cursando?: number | null;
 }
 
 interface Container {
@@ -37,7 +38,7 @@ export default function Disciplina( {disciplina, click, funcaoDependencia} : Dis
     <Container $borda={disciplina.borda}>
       {disciplina.requisitos.length? <Dep className="before" onClick={() => funcaoDependencia(disciplina.requisitos, "requisitos")}>{"<"}</Dep>: <div></div>}
       {disciplina.informacao? <p className="desc" title={disciplina.informacao}>{"i"}</p> : ""}
-      <Sub onClick={() => click(disciplina.id)} $aprovado={disciplina.aprovado}>
+      <Sub onClick={() => click(disciplina.id)} $aprovado={disciplina.aprovado} $cursando = {disciplina.periodoplan}>
         {disciplina.nome}
       </Sub>
       {disciplina.dependentes.length? <Dep className="after" onClick={() => funcaoDependencia(disciplina.dependentes, "dependentes")}>{">"}</Dep> : <div></div>}
@@ -64,7 +65,7 @@ const Sub = styled.div<SubProps>`
   width: 100%;
   padding: 5px 10px;
   cursor: pointer;
-  background-color: ${props => (props.$aprovado? "#d5e2f1" : "#eceef3")};
+  background-color: ${props => (props.$aprovado? "#d5e2f1" : props.$cursando == 1? "#d2ead1" : "#eceef3")};
 `;
 
 const Container = styled.div<Container>`
