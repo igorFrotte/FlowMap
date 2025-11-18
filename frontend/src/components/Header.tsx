@@ -33,10 +33,12 @@ const Header: React.FC = () => {
 
   return (
     <HeaderComp>
-      <LogoArea>
-        <img src={logo} alt="FlowMap Logo" />
-        <h1>FlowMap</h1>
-      </LogoArea>
+      <Link to={user?.tipo == "aluno"? "/fluxograma": "/adm"}>
+        <LogoArea>
+          <img src={logo} alt="FlowMap Logo" />
+          <h1>FlowMap</h1>
+        </LogoArea>
+      </Link>
 
       <RightArea>
         {user && (

@@ -179,6 +179,8 @@ const Title = styled.h2`
   text-align: center;
   margin-bottom: 1.5rem;
   color: #333;
+  font-size: 24px;
+  font-weight: bold;
 `;
 
 const Input = styled.input<{ $hasError?: boolean }>`

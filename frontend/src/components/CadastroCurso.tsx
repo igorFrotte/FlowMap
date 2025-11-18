@@ -515,7 +515,13 @@ const Form = styled.div`
   gap: 1rem;
 `;
 
-const Title = styled.h2`text-align: center; color: #333;`;
+const Title = styled.h2`
+  text-align: center; 
+  color: #333;
+  font-size: 24px;
+  font-weight: bold;
+`;
+
 const Input = styled.input`
   padding: 0.75rem;
   border: 1px solid #ccc;
@@ -525,6 +531,7 @@ const Input = styled.input`
   margin-bottom: 0.5rem;
   &:focus { border-color: #007bff; }
 `;
+
 const Select = styled.select`
   padding: 0.75rem;
   border: 1px solid #ccc;

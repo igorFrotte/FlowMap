@@ -1,5 +1,6 @@
 import { DuplicatedItemError, ForbiddenError, NotFoundError } from "../exceptions/erros.js";
 import prisma from "../prisma/client.js";
+import authRepository from "../repositories/authRepository.js";
 import courseRepository from "../repositories/courseRepository.js";
 import disciplinaRepository from "../repositories/disciplinaRepository.js";
 import type { DisciplinaFormatoCriacao, PeriodoDTO } from "../types/disciplina.js";
@@ -80,13 +81,17 @@ const courseService = {
 
     return prisma.$transaction(async (tx) => {
 
+      const idsAlunosDoCurso = (await authRepository.alunosDoCurso(tx, idCurso)).map( e => e.id);
+
       await courseRepository.atualizarCurso(tx, idCurso, { nome: payload.nome, iduniversidade: payload.idUniversidade, nperiodos: payload.nPeriodos });
 
       await disciplinaRepository.deletarDisciplinasPorCurso(tx, idCurso);
 
       const periodos = payload.periodos;
 
-      await vincularDisciplinasAoCurso(tx, idCurso, periodos);      
+      const idsNovos = await vincularDisciplinasAoCurso(tx, idCurso, periodos);  
+      
+      await vincularDisciplinasAosAlunos(tx, idsAlunosDoCurso, idsNovos);
 
       return { message: "Atualizado com sucesso" };
     });
@@ -94,9 +99,22 @@ const courseService = {
 
 }; 
 
+const vincularDisciplinasAosAlunos = async (tx: TxClient, alunosDoCurso: number[], idsNovos: number[]) => {
+  const disciplinas : { idAluno: number, idDisciplina: number }[] = [];
+
+  alunosDoCurso.map( a => {
+    idsNovos.map( d => {
+      disciplinas.push({ idAluno: a, idDisciplina: d }); 
+    });
+  });
+
+  await disciplinaRepository.inserirDisciplinasDoAluno(tx, disciplinas);
+};
+
 const vincularDisciplinasAoCurso = async (tx: TxClient, idCurso: number, periodos: PeriodoDTO[]) => {
   const dependenciasToCreate: { idDisciplinaDep: number; idTempDisciplinaReq: string }[] = [];
   const correqsToCreate: { idDisciplina: number; idTempDisciplinaCorreq: string }[] = [];
+  const novosIdsDisciplinas = [];
 
   const tempToRealId = new Map<string, number>();
 
@@ -115,6 +133,8 @@ const vincularDisciplinasAoCurso = async (tx: TxClient, idCurso: number, periodo
       d.coRequisitos?.forEach((e: string) =>
         correqsToCreate.push({ idDisciplina: created.id, idTempDisciplinaCorreq: e })
       );
+
+      novosIdsDisciplinas.push(created.id);
     }
   }
 
@@ -122,6 +142,8 @@ const vincularDisciplinasAoCurso = async (tx: TxClient, idCurso: number, periodo
     await disciplinaRepository.criarDependencias(tx, dependenciasToCreate, tempToRealId);
   if (correqsToCreate.length) 
     await disciplinaRepository.criarCorrequisitos(tx, correqsToCreate, tempToRealId);
+
+  return novosIdsDisciplinas;
 }
 
 export default courseService;

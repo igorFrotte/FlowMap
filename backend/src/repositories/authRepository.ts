@@ -22,6 +22,11 @@ const authRepository = {
     });
   },
 
+  alunosDoCurso: async (tx: TxClient = prisma, idCurso: number) => {
+    return tx.aluno.findMany({
+      where: {idcurso: idCurso}
+    });
+  },
 
 };
 

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import styled from "styled-components";
 import axiosService from "../services/axiosService";
 import { useNavigate } from "react-router-dom";
+import logo from "../assets/images/logoFlowMap.png";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -62,6 +63,9 @@ export default function Login() {
 
   return (
     <Container>
+
+      <img src={logo} alt="FlowMap Logo" /> 
+
       <Form onSubmit={handleSubmit}>
         <Title>Entrar</Title>
 
@@ -94,8 +98,15 @@ export default function Login() {
 const Container = styled.div`
   display: flex;
   align-items: center;
-  justify-content: center;
   height: 100vh;
+  flex-direction: column;
+
+  img {
+    height: 180px;
+    width: auto;
+    border-radius: 10px;
+    margin: 80px 0 40px 0;
+  }
 `;
 
 const Form = styled.form`
@@ -113,6 +124,8 @@ const Title = styled.h2`
   text-align: center;
   margin-bottom: 1.5rem;
   color: #333;
+  font-size: 24px;
+  font-weight: bold;
 `;
 
 const Input = styled.input<{ $hasError?: boolean }>`
