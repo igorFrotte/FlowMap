@@ -162,7 +162,6 @@ const Container = styled.div`
   align-items: center;
   justify-content: center;
   height: 100vh;
-  background: #f8f9fa;
 `;
 
 const Form = styled.form`

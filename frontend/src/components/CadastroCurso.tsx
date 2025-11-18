@@ -500,7 +500,6 @@ const Container = styled.div`
   display: flex;
   justify-content: center;
   padding: 2rem;
-  background: #f8f9fa;
   min-height: 100vh;
 `;
 

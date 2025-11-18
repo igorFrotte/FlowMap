@@ -7,7 +7,7 @@ export const aprovadasSchema = z.object({
   
 export const periodoPlanSchema = z.object({
   idsDisciplinas: z.array(z.number().int().positive()),
-  periodoPlan: z.number().int().min(1)
+  periodoPlan: z.number().int().min(1).nullable()
 });
 
 export const periodoPlanArraySchema = z.array(periodoPlanSchema);

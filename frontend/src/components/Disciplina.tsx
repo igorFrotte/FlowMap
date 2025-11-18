@@ -62,20 +62,20 @@ const Sub = styled.div<SubProps>`
   font-size: 14px;
   height: 100%;
   width: 100%;
-  padding: 5px;
+  padding: 5px 10px;
   cursor: pointer;
   background-color: ${props => (props.$aprovado? "#d5e2f1" : "#eceef3")};
 `;
 
 const Container = styled.div<Container>`
   border-radius: 5px;
-  width: 150px;
-  height: 100px;
+  width: 160px;
+  height: 90px;
   position: relative;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border: 5px ${props => (props.$borda? (props.$borda === "deps"? "#4e4593" : "#e1ce3b") : "#5c8ec8")} solid;
+  border: 5px ${props => (props.$borda? (props.$borda === "deps"? "#c52be0" : "#fae757") : "#2974c5")} solid;
 
   & > p {
     position: absolute;

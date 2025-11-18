@@ -118,7 +118,6 @@ export default function Fluxograma() {
 }
 
 const Page = styled.div`
-  background-color: #d5e2f1;
   width: 100%;
   height: 100vh;
   display: flex;
@@ -149,7 +148,7 @@ const Menu = styled.div`
   button {
     color: white;
     width: 130px;
-    height: 50px;
+    height: 40px;
     background-color: #0056b3;
     cursor: pointer;
     border-radius: 10px;

@@ -29,7 +29,7 @@ const disciplinaRepository = {
     })
   }, 
 
-  updateDisciplinasPeriodoPlanDoAluno: async (periodos: {idsDisciplinas: number[], periodoPlan: number}[], idAluno: number) => {
+  updateDisciplinasPeriodoPlanDoAluno: async (periodos: {idsDisciplinas: number[], periodoPlan: number | null}[], idAluno: number) => {
     const updates = periodos.map(p =>
       prisma.aluno_disciplina.updateMany({
         where: {

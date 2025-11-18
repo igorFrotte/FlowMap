@@ -31,7 +31,7 @@ const disciplinaService = {
     return result;
   },
 
-  updatePeriodoPlanDoAluno: async (periodos: {idsDisciplinas: number[], periodoPlan: number}[], idAluno: number) => {
+  updatePeriodoPlanDoAluno: async (periodos: {idsDisciplinas: number[], periodoPlan: number | null}[], idAluno: number) => {
     const results = await disciplinaRepository.updateDisciplinasPeriodoPlanDoAluno(periodos, idAluno);
     return results;
   }

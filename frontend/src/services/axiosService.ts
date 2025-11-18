@@ -90,7 +90,7 @@ const axiosService = {
     return promise;
   },
 
-  mudarPlanejamento: (body: {idsDisciplinas: number[], periodoPlan: number}[]) => {
+  mudarPlanejamento: (body: {idsDisciplinas: number[], periodoPlan: number | null}[]) => {
     const header = createHeader();
     const promise = axios.patch(BASE_URL + "disciplinas/periodoplan", body, header);
     return promise;

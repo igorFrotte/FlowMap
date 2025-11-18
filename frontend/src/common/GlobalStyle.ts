@@ -29,6 +29,7 @@ footer, header, hgroup, menu, nav, section {
 body {
  line-height: 1;
  font-family: "Nunito", sans-serif;
+ background-color: #d5e2f1;
 }
 ol, ul {
  list-style: none;
