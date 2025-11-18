@@ -12,7 +12,7 @@ export const periodoPlanSchema = z.object({
 
 export const periodoPlanArraySchema = z.array(periodoPlanSchema);
 
-const refString = z.string().regex(/^\d+-\d+$/, {
+const refString = z.string().regex(/^\d+-\d+(\.\d+)?$/, {
   message: 'Formato inválido. Deve ser "<numeroPeriodo>-<idTempDisciplina>", ex: "1-50".',
 });
 

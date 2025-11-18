@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axiosService from "../services/axiosService";
 import { useNavigate } from "react-router-dom";
+import styled from "styled-components";
 
 interface Universidade {
   id: number;
@@ -27,34 +28,88 @@ export default function PainelPrincipal() {
   }, []);
 
   return (
-    <div className="p-8">
-      <h1 className="text-2xl font-bold mb-4">Cursos Gerenciados</h1>
-      <button
-        onClick={() => navigate("/adm/curso/novo")}
-        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mb-6"
-      >
+    <Container>
+      <Title>Cursos Gerenciados</Title>
+
+      <ButtonNovo onClick={() => navigate("/adm/curso/novo")}>
         + Novo Curso
-      </button>
+      </ButtonNovo>
 
       {cursos.length === 0 ? (
-        <p>Nenhum curso encontrado.</p>
+        <TextoVazio>Nenhum curso encontrado.</TextoVazio>
       ) : (
-        <ul className="space-y-2">
+        <Lista>
           {cursos.map(c => (
-            <li
+            <ItemLista
               key={c.id}
-              className="p-3 border rounded cursor-pointer hover:bg-gray-100"
               onClick={() => navigate(`/adm/curso/${c.id}`)}
             >
               {c.nome}{" "}
-              <span className="text-gray-500">
+              <UniversidadeNome>
                 ({c.universidade?.nome || "Sem universidade"})
-              </span>
-            </li>
+              </UniversidadeNome>
+            </ItemLista>
           ))}
-        </ul>
+        </Lista>
       )}
-    </div>
+    </Container>
   );
 }
 
+const Container = styled.div`
+  padding: 32px;
+`;
+
+const Title = styled.h1`
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 30px;
+`;
+
+const ButtonNovo = styled.button`
+  background-color: #1d4ed8; /* azul */
+  color: #ffffff;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  margin-bottom: 10px;
+  font-size: 14px;
+
+  &:hover {
+    background-color: #1e40af;
+  }
+`;
+
+const TextoVazio = styled.p`
+  font-size: 16px;
+`;
+
+const Lista = styled.ul`
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  margin-top: 8px;
+`;
+
+const ItemLista = styled.li`
+  padding: 12px;
+  border: 1px solid #2c4976;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 18px;
+  transition: background 0.2s ease;
+
+  &:hover {
+    background-color: #f3f4f6;
+  }
+
+  & + & {
+    margin-top: 10px;
+  }
+`;
+
+const UniversidadeNome = styled.span`
+  color: #6b7280;
+  font-size: 14px;
+`;
