@@ -331,7 +331,7 @@ const StepsGrid = styled.div`
 `;
 
 const StepCard = styled.div`
-  background-color: #0056b3;
+  background-color: #a3c6ee;
   border-radius: 14px;
   padding: 18px 18px 20px;
   border: 1px solid #1e293b;
@@ -350,7 +350,7 @@ const StepNumber = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #a3c6ee;
+  background-color: #699BD5;
   font-size: 0.85rem;
   font-weight: 700;
   margin-bottom: 10px;
@@ -364,7 +364,7 @@ const StepTitle = styled.h3`
 
 const StepText = styled.p`
   font-size: 1rem;
-  color: white;
+  color: #1e293b;
   line-height: 1.5;
 `;
 
@@ -379,7 +379,7 @@ const FeaturesGrid = styled.div`
 `;
 
 const FeatureCard = styled.div`
-  background-color: #0056b3;
+  background-color: #a3c6ee;
   border-radius: 14px;
   padding: 18px 18px 20px;
   border: 1px solid #1e293b;
@@ -392,7 +392,7 @@ const FeatureTitle = styled.h3`
 
 const FeatureText = styled.p`
   font-size: 1rem;
-  color: white;
+  color: #1e293b;
   line-height: 1.5;
 `;
 

@@ -207,31 +207,44 @@ const DraggableBox = styled.div<{
   $disabled?: boolean;
   $critical?: boolean;
   $difficulty?: number;
+  $show?: boolean;
 }>`
-  padding: 8px;
+  padding: 8px 20px 8px 8px;
   margin: 4px;
-  background: ${({ $disabled, $difficulty }) => {
-    if ($disabled) return "#ddd";
-
-    switch ($difficulty) {
-      case 1:
-        return "#ffe5e5"; // vermelho bem claro
-      case 2:
-        return "#ffcccc";
-      case 3:
-        return "#ff9999";
-      case 4:
-        return "#ff6666";
-      case 5:
-        return "#ff3333"; // mais forte
-      default:
-        return "#d5e2f1"; // padrão quando não há dificuldade definida
-    }
-  }};
+  background-color: #d5e2f1;
   border: 2px solid ${({ $critical }) => ($critical ? "#d9534f" : "#5C8EC8")};
   border-radius: 8px;
-  z-index: 3;
   cursor: ${({ $disabled }) => ($disabled ? "pointer" : "grab")};
+  position: relative;
+
+  div {
+    width: 20px;
+    height: 100%;
+    border-radius: 0 7px 7px 0;
+    right: 0;
+    top: 0;
+    position: absolute;
+    background-color: ${({ $show, $difficulty }) => {
+      if (!$show) return "#d5e2f1";
+
+      switch ($difficulty) {
+        case 0:
+          return "#c3ddff"; 
+        case 1:
+          return "#ffe5e5";
+        case 2:
+          return "#ffcccc";
+        case 3:
+          return "#f49a9a";
+        case 4:
+          return "#f96a6a";
+        case 5:
+          return "#ee3131"; 
+        default:
+          return "#d5e2f1"; 
+      }
+    }};
+  }
 `;
 
 const BottomActions = styled.div`
@@ -250,6 +263,7 @@ const Button = styled.button`
   cursor: pointer;
   color: white;
   font-size: 15px;
+  margin-bottom: 20px;
 `;
 
 const PreviousPlanWrapper = styled.div`
@@ -295,12 +309,47 @@ const PreviousPeriodTitle = styled.h3`
   font-size: 16px;
 `;
 
-const PreviousDiscItem = styled.div<{ $critical?: boolean }>`
-  padding: 10px;
+const PreviousDiscItem = styled.div<{ 
+  $critical?: boolean; 
+  $difficulty?: number; 
+  $show?: boolean; 
+}>`
+
+  padding: 8px 20px 8px 8px;
   margin: 4px;
   border: 2px solid ${({ $critical }) => ($critical ? "#d9534f" : "#5C8EC8")};
-  border-radius: 6px;
+  border-radius: 8px;
   background: #d5e2f1;
+  position: relative;
+
+  div {
+    width: 20px;
+    height: 100%;
+    border-radius: 0 7px 7px 0;
+    right: 0;
+    top: 0;
+    position: absolute;
+    background-color: ${({ $show, $difficulty }) => {
+      if (!$show) return "#d5e2f1";
+
+      switch ($difficulty) {
+        case 0:
+          return "#c3ddff"; 
+        case 1:
+          return "#ffe5e5";
+        case 2:
+          return "#ffcccc";
+        case 3:
+          return "#f49a9a";
+        case 4:
+          return "#f96a6a";
+        case 5:
+          return "#ee3131"; 
+        default:
+          return "#d5e2f1"; 
+      }
+    }};
+  }
 `;
 
 /* ------------------ ITEM ARRASTÁVEL ------------------ */
@@ -310,12 +359,14 @@ function DraggableItem({
   disabled = false,
   critical = false,
   difficulty,
+  show
 }: {
   id: string;
   children: React.ReactNode;
   disabled?: boolean;
   critical?: boolean;
   difficulty?: number;
+  show?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id,
@@ -340,6 +391,7 @@ function DraggableItem({
       $disabled={disabled}
       $critical={critical}
       $difficulty={difficulty}
+      $show = {show}
       {...(!disabled ? { ...listeners, ...attributes } : {})}
     >
       {children}
@@ -375,12 +427,11 @@ export default function Planejador() {
   const [backlogTotal, setBacklogTotal] = useState<Disciplina[]>([]);
   const [plan, setPlan] = useState<Disciplina[][]>([[]]);
   const [bloqueados, setBloqueados] = useState<boolean[]>([false]);
-  const [disciplinas, setDisciplinas] = useState<Record<string, Disciplina>>(
-    {}
-  );
+  const [disciplinas, setDisciplinas] = useState<Record<string, Disciplina>>({});
   const [iniciado, setIniciado] = useState(false);
   const [planoAnterior, setPlanoAnterior] = useState<Disciplina[][]>([]);
   const [criticalPathIds, setCriticalPathIds] = useState<number[]>([]); // caminho crítico, em vermelho
+  const [showDiff, setShowDiff] = useState<boolean>(false);
 
   useEffect(() => {
     axiosService
@@ -842,8 +893,11 @@ export default function Planejador() {
                       <PreviousDiscItem
                         key={d.id}
                         $critical={criticalPathIds.includes(d.id)}
+                        $difficulty={Number(d.dificuldade ?? 0)}
+                        $show={showDiff}
                       >
                         {d.nome + " - " + d.periodo + "º"}
+                        <div></div>
                       </PreviousDiscItem>
                     ))}
 
@@ -857,6 +911,7 @@ export default function Planejador() {
           </PreviousPlanWrapper>
         )}
         <BottomActions>
+          <Button onClick={() => setShowDiff(!showDiff)}>Mostrar Dificuldades</Button>
           <Button onClick={resetPlanejamento}>Iniciar Planejamento</Button>
           <Link to="/fluxograma">
             <Button>Fluxograma</Button>
@@ -883,6 +938,7 @@ export default function Planejador() {
                 disabled
                 critical={criticalPathIds.includes(d.id)}
                 difficulty={Number(d.dificuldade ?? 0)}
+                show={showDiff}
               >
                 <span
                   title={
@@ -892,6 +948,7 @@ export default function Planejador() {
                   }
                 >
                   {d.nome + " - " + d.periodo + "º"}
+                  <div></div>
                 </span>
               </DraggableItem>
             ))}
@@ -904,8 +961,10 @@ export default function Planejador() {
                 id={`backlog-${d.id}`}
                 critical={criticalPathIds.includes(d.id)}
                 difficulty={Number(d.dificuldade ?? 0)}
+                show={showDiff}
               >
                 {d.nome + " - " + d.periodo + "º"}
+                <div></div>
               </DraggableItem>
             ))}
           </DroppableColumn>
@@ -930,8 +989,10 @@ export default function Planejador() {
                     disabled={bloqueados[idx]}
                     critical={criticalPathIds.includes(d.id)}
                     difficulty={Number(d.dificuldade ?? 0)}
+                    show={showDiff}
                   >
                     {d.nome + " - " + d.periodo + "º"}
+                    <div></div>
                   </DraggableItem>
                 ))}
 
@@ -946,9 +1007,10 @@ export default function Planejador() {
 
       <BottomActions>
         <Button onClick={addPeriodo}>+ Adicionar Período</Button>
-        <Button onClick={salvarPlanejamento}>Salvar Planejamento</Button>
+        <Button onClick={() => setShowDiff(!showDiff)}>Mostrar Dificuldades</Button>
         <Button onClick={resetPlanejamento}>Reiniciar Planejamento</Button>
         <Button onClick={verPlanejamento}>Cancelar Planejamento</Button>
+        <Button onClick={salvarPlanejamento}>Salvar Planejamento</Button>
       </BottomActions>
     </PageContainer>
   );
