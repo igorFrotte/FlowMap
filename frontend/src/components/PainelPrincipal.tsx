@@ -15,6 +15,7 @@ interface Curso {
   idUniversidade: number;
   nPeriodos: number;
   universidade?: Universidade;
+  _count?: { alunos: number};
 }
 
 export default function PainelPrincipal() {
@@ -48,6 +49,7 @@ export default function PainelPrincipal() {
               <UniversidadeNome>
                 ({c.universidade?.nome || "Sem universidade"})
               </UniversidadeNome>
+              <Alunos>{c._count?.alunos} alunos vinculados</Alunos>
             </ItemLista>
           ))}
         </Lista>
@@ -112,4 +114,10 @@ const ItemLista = styled.li`
 const UniversidadeNome = styled.span`
   color: #6b7280;
   font-size: 14px;
+`;
+
+const Alunos = styled.div`
+  color: #2f3034;
+  font-size: 16px;
+  margin-top: 5px;
 `;

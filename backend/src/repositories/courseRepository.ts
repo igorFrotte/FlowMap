@@ -10,7 +10,12 @@ const courseRepository = {
   cursosDoADM: async (idADM: number) => {
     return prisma.curso.findMany({
       where: { idadm: idADM },
-      include: { universidade: true },
+      include: { 
+        universidade: true,
+        _count: {
+          select: { alunos: true }
+        }
+       },
     });
   },
 
