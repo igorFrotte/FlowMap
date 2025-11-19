@@ -27,6 +27,149 @@ interface Disciplina {
   credito: number;
 }
 
+/* ------------------ FUNÇÃO DE CAMINHOS CRÍTICOS (PERT/CPM) ------------------ */
+/* Cada disciplina tem duração 1.
+   Marca como críticos todos os nós que pertencem a pelo menos um
+   caminho de comprimento máximo (pode haver vários caminhos). */
+/* reqperiodo: todas as disciplinas do conjunto analisado com periodo <= reqperiodo
+   são consideradas predecessoras daquela disciplina. */
+
+function calcularCaminhoCritico(disciplinas: Disciplina[]): number[] {
+  if (disciplinas.length === 0) return [];
+
+  // Mapa id -> disciplina
+  const map = new Map<number, Disciplina>();
+  disciplinas.forEach((d) => map.set(d.id, d));
+
+  // Mapas de predecessores/sucessores e indegree
+  const predecessores = new Map<number, number[]>();
+  const sucessores = new Map<number, number[]>();
+  const indegree = new Map<number, number>();
+
+  disciplinas.forEach((d) => {
+    // Requisitos explícitos (requisitos + correquisitos)
+    const predsExplicitos = [
+      ...d.requisitos.map((r) => r.id),
+      ...d.correquisitos.map((r) => r.id),
+    ];
+
+    // Requisitos implícitos por reqperiodo:
+    // todas as disciplinas do conjunto analisado com periodo <= reqperiodo
+    let predsPeriodo: number[] = [];
+    if (typeof d.reqperiodo === "number") {
+      predsPeriodo = disciplinas
+        .filter(
+          (disc) =>
+            disc.id !== d.id && disc.periodo <= (d.reqperiodo as number)
+        )
+        .map((disc) => disc.id);
+    }
+
+    // Une e filtra apenas ids presentes no conjunto analisado
+    const predsSet = new Set<number>([
+      ...predsExplicitos,
+      ...predsPeriodo,
+    ]);
+    const preds = Array.from(predsSet).filter((id) => map.has(id));
+
+    predecessores.set(d.id, preds);
+    indegree.set(d.id, preds.length);
+
+    preds.forEach((p) => {
+      if (!sucessores.has(p)) sucessores.set(p, []);
+      sucessores.get(p)!.push(d.id);
+    });
+  });
+
+  // Ordenação topológica (Kahn)
+  const indegreeWork = new Map<number, number>();
+  indegree.forEach((v, k) => indegreeWork.set(k, v));
+
+  const fila: number[] = [];
+  indegreeWork.forEach((grau, id) => {
+    if (grau === 0) fila.push(id);
+  });
+
+  const ordemTopologica: number[] = [];
+  while (fila.length > 0) {
+    const u = fila.shift()!;
+    ordemTopologica.push(u);
+    const sucs = sucessores.get(u) || [];
+    sucs.forEach((v) => {
+      const g = (indegreeWork.get(v) || 0) - 1;
+      indegreeWork.set(v, g);
+      if (g === 0) fila.push(v);
+    });
+  }
+
+  // Se houver ciclo, não há DAG → não calculamos caminho crítico clássico
+  if (ordemTopologica.length !== disciplinas.length) {
+    return [];
+  }
+
+  // forward[u] = maior comprimento de caminho (em número de nós) que termina em u
+  const forward = new Map<number, number>();
+  disciplinas.forEach((d) => {
+    forward.set(d.id, 1); // cada disciplina dura 1 unidade
+  });
+
+  ordemTopologica.forEach((id) => {
+    const preds = predecessores.get(id) || [];
+    if (preds.length === 0) {
+      forward.set(id, 1);
+    } else {
+      let melhor = 1;
+      preds.forEach((p) => {
+        const cand = (forward.get(p) || 1) + 1;
+        if (cand > melhor) melhor = cand;
+      });
+      forward.set(id, melhor);
+    }
+  });
+
+  // backward[u] = maior comprimento de caminho (em número de nós) que começa em u
+  const backward = new Map<number, number>();
+  disciplinas.forEach((d) => {
+    backward.set(d.id, 1);
+  });
+
+  const ordemReversa = [...ordemTopologica].reverse();
+  ordemReversa.forEach((id) => {
+    const sucs = sucessores.get(id) || [];
+    if (sucs.length === 0) {
+      backward.set(id, 1);
+    } else {
+      let melhor = 1;
+      sucs.forEach((v) => {
+        const cand = (backward.get(v) || 1) + 1;
+        if (cand > melhor) melhor = cand;
+      });
+      backward.set(id, melhor);
+    }
+  });
+
+  // Comprimento total do "projeto" (em número de nós)
+  let L = 0;
+  forward.forEach((valor) => {
+    if (valor > L) L = valor;
+  });
+
+  if (L <= 0) return [];
+
+  // Nó é crítico se estiver em pelo menos um caminho de comprimento L:
+  // forward[u] + backward[u] - 1 === L
+  const criticos = new Set<number>();
+  disciplinas.forEach((d) => {
+    const f = forward.get(d.id) || 0;
+    const b = backward.get(d.id) || 0;
+    if (f + b - 1 === L) {
+      criticos.add(d.id);
+    }
+  });
+
+  return Array.from(criticos);
+}
+
 /* ------------------ STYLED COMPONENTS ------------------ */
 
 const PageContainer = styled.div`
@@ -51,8 +194,8 @@ const ColumnContainer = styled.div<{ $disabled?: boolean }>`
     $disabled ? "3px solid #5C8EC8" : "3px dashed #5C8EC8"};
   border-radius: 10px;
   opacity: ${({ $disabled }) => ($disabled ? 0.6 : 1)};
-  display: flex;             
-  flex-direction: column;    
+  display: flex;
+  flex-direction: column;
 `;
 
 const ColumnTitle = styled.h3`
@@ -61,11 +204,11 @@ const ColumnTitle = styled.h3`
   font-size: 16px;
 `;
 
-const DraggableBox = styled.div<{ $disabled?: boolean }>`
+const DraggableBox = styled.div<{ $disabled?: boolean; $critical?: boolean }>`
   padding: 8px;
   margin: 4px;
   background: ${({ $disabled }) => ($disabled ? "#ddd" : "#d5e2f1")};
-  border: 1px solid #5C8EC8;
+  border: 2px solid ${({ $critical }) => ($critical ? "#d9534f" : "#5C8EC8")};
   border-radius: 8px;
   z-index: 3;
   cursor: ${({ $disabled }) => ($disabled ? "pointer" : "grab")};
@@ -115,13 +258,13 @@ const PreviousPeriodCard = styled.div`
   border: 3px solid #5C8EC8;
   border-radius: 10px;
   background: #fafafa;
-  display: flex;             
-  flex-direction: column;    
+  display: flex;
+  flex-direction: column;
 `;
 
 const PeriodTotal = styled.div`
-  margin-top: auto;          
-  align-self: flex-end;      
+  margin-top: auto;
+  align-self: flex-end;
   font-size: 12px;
   font-weight: bold;
 `;
@@ -145,10 +288,12 @@ function DraggableItem({
   id,
   children,
   disabled = false,
+  critical = false,
 }: {
   id: string;
   children: React.ReactNode;
   disabled?: boolean;
+  critical?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id,
@@ -162,8 +307,8 @@ function DraggableItem({
       !disabled && transform
         ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
         : undefined,
-    position: isDragging ? "relative" : undefined, 
-    zIndex: isDragging ? 999 : undefined, 
+    position: isDragging ? "relative" : undefined,
+    zIndex: isDragging ? 999 : undefined,
   };
 
   return (
@@ -171,6 +316,7 @@ function DraggableItem({
       ref={setNodeRef}
       style={style}
       $disabled={disabled}
+      $critical={critical}
       {...(!disabled ? { ...listeners, ...attributes } : {})}
     >
       {children}
@@ -211,6 +357,7 @@ export default function Planejador() {
   );
   const [iniciado, setIniciado] = useState(false);
   const [planoAnterior, setPlanoAnterior] = useState<Disciplina[][]>([]);
+  const [criticalPathIds, setCriticalPathIds] = useState<number[]>([]); // único caminho crítico (maior), em vermelho
 
   useEffect(() => {
     axiosService
@@ -237,6 +384,11 @@ export default function Planejador() {
       })
       .catch((e) => console.log(e.message));
   }, []);
+
+  // IDs de disciplinas aprovadas
+  const idsAprovadas = Object.values(disciplinas)
+    .filter((d) => d.aprovado)
+    .map((d) => d.id);
 
   /* ------------------ REINICIAR PLANEJAMENTO ------------------ */
   const resetPlanejamento = () => {
@@ -279,10 +431,25 @@ export default function Planejador() {
           const requisitosOK = d.requisitos.every((r) =>
             aprovadasIds.includes(r.id)
           );
+
           const creditosOK =
             !d.reqcreditos || creditosConcluidos >= d.reqcreditos;
-          const periodoPermitido = periodoOK(d);
-          return !(requisitosOK && creditosOK && periodoPermitido);
+
+          const reqPeriodoOK =
+            typeof d.reqperiodo !== "number"
+              ? true
+              : Object.values(disciplinas)
+                  .filter((disc) => disc.periodo <= d.reqperiodo!)
+                  .every((disc) => disc.aprovado);
+
+          return (
+            !iniciais.includes(d) && // não está disponível
+            !(
+              requisitosOK &&
+              creditosOK &&
+              reqPeriodoOK
+            )
+          );
         });
 
         setBacklog(iniciais);
@@ -291,13 +458,20 @@ export default function Planejador() {
         setBloqueados([false]);
         setIniciado(true);
         setPlanoAnterior([]);
+
+        // Caminho crítico inicial: todas não aprovadas (ainda não há alocadas)
+        if (naoAprovadas.length > 0) {
+          const caminho = calcularCaminhoCritico(naoAprovadas);
+          setCriticalPathIds(caminho);
+        } else {
+          setCriticalPathIds([]);
+        }
       })
       .catch((e) => console.log(e.message));
   };
 
   /* ------------------ CANCELAR PLANEJAMENTO ------------------ */
   const verPlanejamento = () => {
-    // Reconstroi o planejamento anterior a partir das disciplinas já carregadas
     const todas = Object.values(disciplinas) as Disciplina[];
 
     const maxPeriodo = Math.max(
@@ -324,12 +498,12 @@ export default function Planejador() {
       setPlanoAnterior([]);
     }
 
-    // Volta para o estado inicial do planejador
     setIniciado(false);
     setBacklog([]);
     setBacklogTotal([]);
     setPlan([[]]);
     setBloqueados([false]);
+    setCriticalPathIds([]);
   };
 
   /* ------------------ DRAG & DROP ------------------ */
@@ -398,52 +572,45 @@ export default function Planejador() {
     }
     setBacklog(newBacklog);
     setPlan(newPlan);
+    // Caminho crítico é recalculado apenas em addPeriodo, como solicitado
   };
 
-  // 🔹 Pega IDs de disciplinas cursadas (aprovadas)
-  const idsAprovadas = Object.values(disciplinas)
-    .filter((d) => d.aprovado)
-    .map((d) => d.id);
-
-/* ------------------ ADICIONAR NOVO PERÍODO ------------------ */
+  /* ------------------ ADICIONAR NOVO PERÍODO ------------------ */
   const addPeriodo = () => {
-    // 🔹 Pega o último período planejado
     const lastPeriodo = plan[plan.length - 1];
     if (!lastPeriodo || lastPeriodo.length === 0) {
       alert("Você precisa adicionar disciplinas antes de criar um novo período.");
       return;
     }
 
-    // 🔹 Pega IDs de disciplinas já planejadas em períodos anteriores
+    // IDs de disciplinas planejadas em períodos anteriores
     const idsPlanejadosAntes = plan
       .slice(0, -1)
       .flat()
       .map((d) => d.id);
 
-    // 🔹 Conjunto de disciplinas disponíveis (aprovadas + anteriores)
     const idsDisponiveis = [...new Set([...idsAprovadas, ...idsPlanejadosAntes])];
 
-    // 🔹 Verifica cada disciplina do último período
+    // Verifica correquisitos do último período
     for (const disc of lastPeriodo) {
       if (disc.correquisitos.length > 0) {
         const idsCorreq = disc.correquisitos.map((c) => c.id);
 
         const correqOK = idsCorreq.every(
           (id) =>
-            idsDisponiveis.includes(id) || // já cursada ou planejada antes
-            lastPeriodo.some((d) => d.id === id) // ou está no mesmo período
+            idsDisponiveis.includes(id) ||
+            lastPeriodo.some((d) => d.id === id)
         );
 
         if (!correqOK) {
           alert(
             `A disciplina "${disc.nome}" possui correquisitos que não estão no mesmo período ou ainda não foram cursados.`
           );
-          return; // Impede a criação do novo período
+          return;
         }
       }
     }
 
-    // 🔹 Se passou na verificação, continua normalmente
     const lastIdx = plan.length - 1;
     const newBloqueados = [...bloqueados];
     newBloqueados[lastIdx] = true;
@@ -501,7 +668,10 @@ export default function Planejador() {
           ? true
           : Object.values(disciplinas)
               .filter((disc) => disc.periodo <= d.reqperiodo!)
-              .every((disc) => disc.aprovado);
+              .every(
+                (disc) =>
+                  disc.aprovado || disciplinasAlocadasIds.includes(disc.id)
+              );
 
       return (
         !disciplinasAlocadasIds.includes(d.id) &&
@@ -513,6 +683,17 @@ export default function Planejador() {
     setBacklogTotal(bloqueadas);
     setPlan([...plan, []]);
     setBloqueados([...newBloqueados, false]);
+
+    // Recalcula caminho crítico com base nas disciplinas RESTANTES
+    const restantes = todasNaoAprovadas.filter(
+      (d) => !disciplinasCumpridasIds.includes(d.id)
+    );
+    if (restantes.length > 0) {
+      const caminho = calcularCaminhoCritico(restantes);
+      setCriticalPathIds(caminho);
+    } else {
+      setCriticalPathIds([]);
+    }
   };
 
   /* ------------------ SALVAR PLANEJAMENTO ------------------ */
@@ -520,7 +701,7 @@ export default function Planejador() {
     if (backlog.length === 0 && backlogTotal.length === 0) {
       let objs = plan.map((el, i) => ({
         idsDisciplinas: el.map((e) => e.id),
-        periodoPlan: i + 1 as number | null,
+        periodoPlan: (i + 1) as number | null,
       }));
 
       objs.push({
@@ -537,6 +718,7 @@ export default function Planejador() {
           setBacklogTotal([]);
           setPlan([[]]);
           setBloqueados([false]);
+          setCriticalPathIds([]);
           axiosService
             .mostrarDisciplinasDoAluno()
             .then((r) => {
@@ -580,7 +762,10 @@ export default function Planejador() {
             <PreviousPlanTitle>Planejamento Anterior</PreviousPlanTitle>
             <PreviousPlanColumns>
               {planoAnterior.map((periodo, idx) => {
-                const totalCreditos = periodo.reduce((acc, d) => acc + d.credito, 0);
+                const totalCreditos = periodo.reduce(
+                  (acc, d) => acc + d.credito,
+                  0
+                );
 
                 return (
                   <PreviousPeriodCard key={idx}>
@@ -605,7 +790,9 @@ export default function Planejador() {
         )}
         <BottomActions>
           <Button onClick={resetPlanejamento}>Iniciar Planejamento</Button>
-          <Link to="/fluxograma"><Button>Fluxograma</Button></Link>
+          <Link to="/fluxograma">
+            <Button>Fluxograma</Button>
+          </Link>
         </BottomActions>
       </PageContainer>
     );
@@ -616,9 +803,18 @@ export default function Planejador() {
       <PreviousPlanTitle>Planejar Períodos</PreviousPlanTitle>
       <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <ColumnsWrapper>
-          <DroppableColumn id="backlog-total" title="Disciplinas Indisponíveis" disabled>
+          <DroppableColumn
+            id="backlog-total"
+            title="Disciplinas Indisponíveis"
+            disabled
+          >
             {backlogTotal.map((d) => (
-              <DraggableItem key={d.id} id={`block-${d.id}`} disabled>
+              <DraggableItem
+                key={d.id}
+                id={`block-${d.id}`}
+                disabled
+                critical={criticalPathIds.includes(d.id)}
+              >
                 <span
                   title={
                     d.reqcreditos
@@ -634,14 +830,21 @@ export default function Planejador() {
 
           <DroppableColumn id="backlog" title="Disciplinas Disponíveis">
             {backlog.map((d) => (
-              <DraggableItem key={d.id} id={`backlog-${d.id}`}>
+              <DraggableItem
+                key={d.id}
+                id={`backlog-${d.id}`}
+                critical={criticalPathIds.includes(d.id)}
+              >
                 {d.nome + " - " + d.periodo + "º"}
               </DraggableItem>
             ))}
           </DroppableColumn>
 
           {plan.map((periodo, idx) => {
-            const totalCreditos = periodo.reduce((acc, d) => acc + d.credito, 0);
+            const totalCreditos = periodo.reduce(
+              (acc, d) => acc + d.credito,
+              0
+            );
 
             return (
               <DroppableColumn
@@ -655,6 +858,7 @@ export default function Planejador() {
                     key={d.id}
                     id={`periodo-${idx}-${d.id}`}
                     disabled={bloqueados[idx]}
+                    critical={criticalPathIds.includes(d.id)}
                   >
                     {d.nome + " - " + d.periodo + "º"}
                   </DraggableItem>
