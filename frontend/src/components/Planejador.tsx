@@ -51,6 +51,8 @@ const ColumnContainer = styled.div<{ $disabled?: boolean }>`
     $disabled ? "3px solid #5C8EC8" : "3px dashed #5C8EC8"};
   border-radius: 10px;
   opacity: ${({ $disabled }) => ($disabled ? 0.6 : 1)};
+  display: flex;             
+  flex-direction: column;    
 `;
 
 const ColumnTitle = styled.h3`
@@ -65,6 +67,7 @@ const DraggableBox = styled.div<{ $disabled?: boolean }>`
   background: ${({ $disabled }) => ($disabled ? "#ddd" : "#d5e2f1")};
   border: 1px solid #5C8EC8;
   border-radius: 8px;
+  z-index: 3;
   cursor: ${({ $disabled }) => ($disabled ? "pointer" : "grab")};
 `;
 
@@ -112,6 +115,15 @@ const PreviousPeriodCard = styled.div`
   border: 3px solid #5C8EC8;
   border-radius: 10px;
   background: #fafafa;
+  display: flex;             
+  flex-direction: column;    
+`;
+
+const PeriodTotal = styled.div`
+  margin-top: auto;          
+  align-self: flex-end;      
+  font-size: 12px;
+  font-weight: bold;
 `;
 
 const PreviousPeriodTitle = styled.h3`
@@ -143,11 +155,15 @@ function DraggableItem({
     disabled,
   });
 
+  const isDragging = !disabled && !!transform;
+
   const style: React.CSSProperties = {
     transform:
       !disabled && transform
         ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
         : undefined,
+    position: isDragging ? "relative" : undefined, 
+    zIndex: isDragging ? 999 : undefined, 
   };
 
   return (
@@ -563,16 +579,27 @@ export default function Planejador() {
           <PreviousPlanWrapper>
             <PreviousPlanTitle>Planejamento Anterior</PreviousPlanTitle>
             <PreviousPlanColumns>
-              {planoAnterior.map((periodo, idx) => (
-                <PreviousPeriodCard key={idx}>
-                  <PreviousPeriodTitle>Período Planejado {idx + 1}</PreviousPeriodTitle>
-                  {periodo.map((d) => (
-                    <PreviousDiscItem key={d.id}>
-                      {d.nome + " | " + d.periodo}
-                    </PreviousDiscItem>
-                  ))}
-                </PreviousPeriodCard>
-              ))}
+              {planoAnterior.map((periodo, idx) => {
+                const totalCreditos = periodo.reduce((acc, d) => acc + d.credito, 0);
+
+                return (
+                  <PreviousPeriodCard key={idx}>
+                    <PreviousPeriodTitle>
+                      Período Planejado {idx + 1}
+                    </PreviousPeriodTitle>
+
+                    {periodo.map((d) => (
+                      <PreviousDiscItem key={d.id}>
+                        {d.nome + " - " + d.periodo + "º"}
+                      </PreviousDiscItem>
+                    ))}
+
+                    <PeriodTotal>
+                      Carga horária: {totalCreditos}h
+                    </PeriodTotal>
+                  </PreviousPeriodCard>
+                );
+              })}
             </PreviousPlanColumns>
           </PreviousPlanWrapper>
         )}
@@ -599,7 +626,7 @@ export default function Planejador() {
                       : "Requisito: " + d.requisitos.map((r) => r.nome).join(", ")
                   }
                 >
-                  {d.nome + " | " + d.periodo}
+                  {d.nome + " - " + d.periodo + "º"}
                 </span>
               </DraggableItem>
             ))}
@@ -608,29 +635,37 @@ export default function Planejador() {
           <DroppableColumn id="backlog" title="Disciplinas Disponíveis">
             {backlog.map((d) => (
               <DraggableItem key={d.id} id={`backlog-${d.id}`}>
-                {d.nome + " | " + d.periodo}
+                {d.nome + " - " + d.periodo + "º"}
               </DraggableItem>
             ))}
           </DroppableColumn>
 
-          {plan.map((periodo, idx) => (
-            <DroppableColumn
-              key={idx}
-              id={`periodo-${idx}`}
-              title={`Período Planejado ${idx + 1}`}
-              disabled={bloqueados[idx]}
-            >
-              {periodo.map((d) => (
-                <DraggableItem
-                  key={d.id}
-                  id={`periodo-${idx}-${d.id}`}
-                  disabled={bloqueados[idx]}
-                >
-                  {d.nome + " | " + d.periodo}
-                </DraggableItem>
-              ))}
-            </DroppableColumn>
-          ))}
+          {plan.map((periodo, idx) => {
+            const totalCreditos = periodo.reduce((acc, d) => acc + d.credito, 0);
+
+            return (
+              <DroppableColumn
+                key={idx}
+                id={`periodo-${idx}`}
+                title={`Período Planejado ${idx + 1}`}
+                disabled={bloqueados[idx]}
+              >
+                {periodo.map((d) => (
+                  <DraggableItem
+                    key={d.id}
+                    id={`periodo-${idx}-${d.id}`}
+                    disabled={bloqueados[idx]}
+                  >
+                    {d.nome + " - " + d.periodo + "º"}
+                  </DraggableItem>
+                ))}
+
+                <PeriodTotal>
+                  Carga horária: {totalCreditos}h
+                </PeriodTotal>
+              </DroppableColumn>
+            );
+          })}
         </ColumnsWrapper>
       </DndContext>
 
