@@ -47,10 +47,9 @@ function calcularCaminhoCritico(disciplinas: Disciplina[]): number[] {
   const indegree = new Map<number, number>();
 
   disciplinas.forEach((d) => {
-    // Requisitos explícitos (requisitos + correquisitos)
+    // Requisitos explícitos (requisitos)
     const predsExplicitos = [
       ...d.requisitos.map((r) => r.id),
-      ...d.correquisitos.map((r) => r.id),
     ];
 
     // Requisitos implícitos por reqperiodo:
@@ -204,10 +203,31 @@ const ColumnTitle = styled.h3`
   font-size: 16px;
 `;
 
-const DraggableBox = styled.div<{ $disabled?: boolean; $critical?: boolean }>`
+const DraggableBox = styled.div<{
+  $disabled?: boolean;
+  $critical?: boolean;
+  $difficulty?: number;
+}>`
   padding: 8px;
   margin: 4px;
-  background: ${({ $disabled }) => ($disabled ? "#ddd" : "#d5e2f1")};
+  background: ${({ $disabled, $difficulty }) => {
+    if ($disabled) return "#ddd";
+
+    switch ($difficulty) {
+      case 1:
+        return "#ffe5e5"; // vermelho bem claro
+      case 2:
+        return "#ffcccc";
+      case 3:
+        return "#ff9999";
+      case 4:
+        return "#ff6666";
+      case 5:
+        return "#ff3333"; // mais forte
+      default:
+        return "#d5e2f1"; // padrão quando não há dificuldade definida
+    }
+  }};
   border: 2px solid ${({ $critical }) => ($critical ? "#d9534f" : "#5C8EC8")};
   border-radius: 8px;
   z-index: 3;
@@ -275,10 +295,10 @@ const PreviousPeriodTitle = styled.h3`
   font-size: 16px;
 `;
 
-const PreviousDiscItem = styled.div`
+const PreviousDiscItem = styled.div<{ $critical?: boolean }>`
   padding: 10px;
   margin: 4px;
-  border: 1px solid #5C8EC8;
+  border: 2px solid ${({ $critical }) => ($critical ? "#d9534f" : "#5C8EC8")};
   border-radius: 6px;
   background: #d5e2f1;
 `;
@@ -289,11 +309,13 @@ function DraggableItem({
   children,
   disabled = false,
   critical = false,
+  difficulty,
 }: {
   id: string;
   children: React.ReactNode;
   disabled?: boolean;
   critical?: boolean;
+  difficulty?: number;
 }) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id,
@@ -317,6 +339,7 @@ function DraggableItem({
       style={style}
       $disabled={disabled}
       $critical={critical}
+      $difficulty={difficulty}
       {...(!disabled ? { ...listeners, ...attributes } : {})}
     >
       {children}
@@ -357,7 +380,7 @@ export default function Planejador() {
   );
   const [iniciado, setIniciado] = useState(false);
   const [planoAnterior, setPlanoAnterior] = useState<Disciplina[][]>([]);
-  const [criticalPathIds, setCriticalPathIds] = useState<number[]>([]); // único caminho crítico (maior), em vermelho
+  const [criticalPathIds, setCriticalPathIds] = useState<number[]>([]); // caminho crítico, em vermelho
 
   useEffect(() => {
     axiosService
@@ -365,6 +388,7 @@ export default function Planejador() {
       .then((r) => {
         setDisciplinas(r.data);
         const todas = Object.values(r.data) as Disciplina[];
+
         const maxPeriodo = Math.max(
           0,
           ...todas.filter((d) => d.periodoplan).map((d) => d.periodoplan ?? 0)
@@ -380,6 +404,18 @@ export default function Planejador() {
             }
           });
           setPlanoAnterior(plano);
+        }
+
+        // Já calcula caminho crítico das não aprovadas para exibir no Planejamento Anterior
+        const todasNaoAprovadas = todas.filter(
+          (d) => !d.aprovado
+        ) as Disciplina[];
+
+        if (todasNaoAprovadas.length > 0) {
+          const caminho = calcularCaminhoCritico(todasNaoAprovadas);
+          setCriticalPathIds(caminho);
+        } else {
+          setCriticalPathIds([]);
         }
       })
       .catch((e) => console.log(e.message));
@@ -461,7 +497,7 @@ export default function Planejador() {
 
         // Caminho crítico inicial: todas não aprovadas (ainda não há alocadas)
         if (naoAprovadas.length > 0) {
-          const caminho = calcularCaminhoCritico(naoAprovadas);
+          const caminho = calcularCaminhoCritico(naoAprovadas as Disciplina[]);
           setCriticalPathIds(caminho);
         } else {
           setCriticalPathIds([]);
@@ -498,12 +534,24 @@ export default function Planejador() {
       setPlanoAnterior([]);
     }
 
+    // Recalcula caminho crítico para todas as disciplinas não aprovadas,
+    // para também destacar no Planejamento Anterior
+    const todasNaoAprovadas = todas.filter(
+      (d) => !d.aprovado
+    ) as Disciplina[];
+
+    if (todasNaoAprovadas.length > 0) {
+      const caminho = calcularCaminhoCritico(todasNaoAprovadas);
+      setCriticalPathIds(caminho);
+    } else {
+      setCriticalPathIds([]);
+    }
+
     setIniciado(false);
     setBacklog([]);
     setBacklogTotal([]);
     setPlan([[]]);
     setBloqueados([false]);
-    setCriticalPathIds([]);
   };
 
   /* ------------------ DRAG & DROP ------------------ */
@@ -684,10 +732,16 @@ export default function Planejador() {
     setPlan([...plan, []]);
     setBloqueados([...newBloqueados, false]);
 
-    // Recalcula caminho crítico com base nas disciplinas RESTANTES
-    const restantes = todasNaoAprovadas.filter(
-      (d) => !disciplinasCumpridasIds.includes(d.id)
-    );
+    // Conjunto de disciplinas restantes (disponíveis + bloqueadas),
+    // excluindo o que já foi planejado
+    const restantesMap = new Map<number, Disciplina>();
+
+    novasDisciplinas.forEach((d) => restantesMap.set(d.id, d));
+    bloqueadas.forEach((d) => restantesMap.set(d.id, d));
+
+    const restantes = Array.from(restantesMap.values());
+
+    // Recalcula caminho crítico com base nas disciplinas restantes
     if (restantes.length > 0) {
       const caminho = calcularCaminhoCritico(restantes);
       setCriticalPathIds(caminho);
@@ -744,6 +798,17 @@ export default function Planejador() {
               } else {
                 setPlanoAnterior([]);
               }
+
+              // após recarregar, recalcula caminho crítico das não aprovadas
+              const todasNaoAprovadas = todas.filter(
+                (d) => !d.aprovado
+              ) as Disciplina[];
+              if (todasNaoAprovadas.length > 0) {
+                const caminho = calcularCaminhoCritico(todasNaoAprovadas);
+                setCriticalPathIds(caminho);
+              } else {
+                setCriticalPathIds([]);
+              }
             })
             .catch((e) => console.log(e.message));
         })
@@ -774,7 +839,10 @@ export default function Planejador() {
                     </PreviousPeriodTitle>
 
                     {periodo.map((d) => (
-                      <PreviousDiscItem key={d.id}>
+                      <PreviousDiscItem
+                        key={d.id}
+                        $critical={criticalPathIds.includes(d.id)}
+                      >
                         {d.nome + " - " + d.periodo + "º"}
                       </PreviousDiscItem>
                     ))}
@@ -814,6 +882,7 @@ export default function Planejador() {
                 id={`block-${d.id}`}
                 disabled
                 critical={criticalPathIds.includes(d.id)}
+                difficulty={Number(d.dificuldade ?? 0)}
               >
                 <span
                   title={
@@ -834,6 +903,7 @@ export default function Planejador() {
                 key={d.id}
                 id={`backlog-${d.id}`}
                 critical={criticalPathIds.includes(d.id)}
+                difficulty={Number(d.dificuldade ?? 0)}
               >
                 {d.nome + " - " + d.periodo + "º"}
               </DraggableItem>
@@ -859,6 +929,7 @@ export default function Planejador() {
                     id={`periodo-${idx}-${d.id}`}
                     disabled={bloqueados[idx]}
                     critical={criticalPathIds.includes(d.id)}
+                    difficulty={Number(d.dificuldade ?? 0)}
                   >
                     {d.nome + " - " + d.periodo + "º"}
                   </DraggableItem>
