@@ -60,10 +60,11 @@ const Sub = styled.div<SubProps>`
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 14px;
+  font-size: 12px;
   height: 100%;
   width: 100%;
   padding: 5px 10px;
+  word-break: break-word;
   cursor: pointer;
   background-color: ${props => (props.$aprovado? "#d5e2f1" : props.$cursando == 1? "#d2ead1" : "#eceef3")};
 `;
@@ -71,7 +72,7 @@ const Sub = styled.div<SubProps>`
 const Container = styled.div<Container>`
   border-radius: 5px;
   width: 160px;
-  height: 90px;
+  height: 100px;
   position: relative;
   display: flex;
   justify-content: space-between;

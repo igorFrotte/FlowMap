@@ -47,9 +47,26 @@ function calcularCaminhoCritico(disciplinas: Disciplina[]): number[] {
   const indegree = new Map<number, number>();
 
   disciplinas.forEach((d) => {
-    // Requisitos explícitos (requisitos)
+    // Requisitos explícitos da própria disciplina
+    const predsRequisitosDiretos = d.requisitos.map((r) => r.id);
+
+    // Pré-requisitos dos correquisitos:
+    // para cada correquisito, pegar os seus requisitos
+    const predsRequisitosDosCorrequisitos: number[] = [];
+
+    d.correquisitos?.forEach((cor) => {
+      const corDisc = map.get(cor.id);
+      if (!corDisc) return;
+
+      corDisc.requisitos.forEach((req) => {
+        predsRequisitosDosCorrequisitos.push(req.id);
+      });
+    });
+
+    // Une requisitos diretos + pré-requisitos dos correquisitos
     const predsExplicitos = [
-      ...d.requisitos.map((r) => r.id),
+      ...predsRequisitosDiretos,
+      ...predsRequisitosDosCorrequisitos,
     ];
 
     // Requisitos implícitos por reqperiodo:
@@ -264,6 +281,10 @@ const Button = styled.button`
   color: white;
   font-size: 15px;
   margin-bottom: 20px;
+
+  &:hover {
+    background: #007bff;
+  }
 `;
 
 const PreviousPlanWrapper = styled.div`
@@ -896,8 +917,26 @@ export default function Planejador() {
                         $difficulty={Number(d.dificuldade ?? 0)}
                         $show={showDiff}
                       >
-                        {d.nome + " - " + d.periodo + "º"}
-                        <div></div>
+                        <span title={(() => {
+                          let msg = "";
+
+                          if (d.reqcreditos)
+                            msg += `Requisito: ${d.reqcreditos} créditos\n`;
+
+                          if (d.reqperiodo)
+                            msg += `Requisito: Até o ${d.reqperiodo}º período completo\n`;
+
+                          if (d.requisitos?.length)
+                            msg += `Requisitos: ${d.requisitos.map(e => e.nome).join(", ")}\n`;
+
+                          if (d.correquisitos?.length)
+                            msg += `Correquisitos: ${d.correquisitos.map(e => e.nome).join(", ")}`;
+
+                          return msg.trim(); // garante que é string
+                        })()}>
+                          {d.nome + " - " + d.periodo + "º"}
+                          <div></div>
+                        </span>
                       </PreviousDiscItem>
                     ))}
 
@@ -940,13 +979,23 @@ export default function Planejador() {
                 difficulty={Number(d.dificuldade ?? 0)}
                 show={showDiff}
               >
-                <span
-                  title={
-                    d.reqcreditos
-                      ? `Requisito: ${d.reqcreditos} créditos`
-                      : "Requisito: " + d.requisitos.map((r) => r.nome).join(", ")
-                  }
-                >
+                <span title={(() => {
+                  let msg = "";
+
+                  if (d.reqcreditos)
+                    msg += `Requisito: ${d.reqcreditos} créditos\n`;
+
+                  if (d.reqperiodo)
+                    msg += `Requisito: Até o ${d.reqperiodo}º período completo\n`;
+
+                  if (d.requisitos?.length)
+                    msg += `Requisitos: ${d.requisitos.map(e => e.nome).join(", ")}\n`;
+
+                  if (d.correquisitos?.length)
+                    msg += `Correquisitos: ${d.correquisitos.map(e => e.nome).join(", ")}`;
+
+                  return msg.trim(); // garante que é string
+                })()}>
                   {d.nome + " - " + d.periodo + "º"}
                   <div></div>
                 </span>
@@ -963,8 +1012,26 @@ export default function Planejador() {
                 difficulty={Number(d.dificuldade ?? 0)}
                 show={showDiff}
               >
-                {d.nome + " - " + d.periodo + "º"}
-                <div></div>
+                <span title={(() => {
+                  let msg = "";
+
+                  if (d.reqcreditos)
+                    msg += `Requisito: ${d.reqcreditos} créditos\n`;
+
+                  if (d.reqperiodo)
+                    msg += `Requisito: Até o ${d.reqperiodo}º período completo\n`;
+
+                  if (d.requisitos?.length)
+                    msg += `Requisitos: ${d.requisitos.map(e => e.nome).join(", ")}\n`;
+
+                  if (d.correquisitos?.length)
+                    msg += `Correquisitos: ${d.correquisitos.map(e => e.nome).join(", ")}`;
+
+                  return msg.trim(); // garante que é string
+                })()}>
+                  {d.nome + " - " + d.periodo + "º"}
+                  <div></div>
+                </span>
               </DraggableItem>
             ))}
           </DroppableColumn>
@@ -991,8 +1058,26 @@ export default function Planejador() {
                     difficulty={Number(d.dificuldade ?? 0)}
                     show={showDiff}
                   >
-                    {d.nome + " - " + d.periodo + "º"}
-                    <div></div>
+                    <span title={(() => {
+                      let msg = "";
+
+                      if (d.reqcreditos)
+                        msg += `Requisito: ${d.reqcreditos} créditos\n`;
+
+                      if (d.reqperiodo)
+                        msg += `Requisito: Até o ${d.reqperiodo}º período completo\n`;
+
+                      if (d.requisitos?.length)
+                        msg += `Requisitos: ${d.requisitos.map(e => e.nome).join(", ")}\n`;
+
+                      if (d.correquisitos?.length)
+                        msg += `Correquisitos: ${d.correquisitos.map(e => e.nome).join(", ")}`;
+
+                      return msg.trim(); // garante que é string
+                    })()}>
+                      {d.nome + " - " + d.periodo + "º"}
+                      <div></div>
+                    </span>
                   </DraggableItem>
                 ))}
 

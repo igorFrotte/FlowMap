@@ -116,17 +116,20 @@ export default function Fluxograma() {
 
 const Page = styled.div`
   width: 100%;
-  height: 100vh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  align-items: center;
 `;
 
 const Container = styled.div`
   display: flex;
+  overflow-x: auto;
+  overflow-y: auto;
+  max-width: 100%;
+  margin: 20px;
+  gap: 10px;
   
   & > div {
-      margin: 10px;
       text-align: center;
 
       & > div {
@@ -139,7 +142,7 @@ const Menu = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-bottom: 10px;
+  margin: 10px;
   gap: 20px;
 
   button {
@@ -150,5 +153,9 @@ const Menu = styled.div`
     cursor: pointer;
     border-radius: 10px;
     font-size: 15px;
+  }
+
+  button:hover {
+    background: #007bff;
   }
 `;
