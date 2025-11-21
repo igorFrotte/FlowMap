@@ -7,12 +7,16 @@ const disciplinaService = {
     const disciplinas = await disciplinaRepository.disciplinasComDependenciasDoAluno(idAluno);
     if (!disciplinas) throw new Error("Aluno não possui disciplinas vinculadas");
     return disciplinas.reduce((acc, d) => {
+      let info : string | null =  (d.disciplina.reqperiodo? "Até o " + d.disciplina.reqperiodo + "º período completo\n": "")
+        + (d.disciplina.reqcreditos? "Total de " + d.disciplina.reqcreditos + " créditos cursados\n": "")
+        + (d.disciplina.correquisitos.length? "Correquisito: " + d.disciplina.correquisitos.map(e => e.correq.nome).join(", "): "");
+      if (info === "")  info = null;
       acc[d.disciplina.id] = {
         id: d.disciplina.id,
         nome: d.disciplina.nome,
         periodo: d.disciplina.periodo,
         dificuldade: d.disciplina.dificuldade,
-        informacao: d.disciplina.informacao,
+        informacao: info,
         reqcreditos: d.disciplina.reqcreditos,
         reqperiodo: d.disciplina.reqperiodo,
         requisitos: d.disciplina.requisitos?.map(r => ({ id: r.req.id, nome: r.req.nome })) ?? [],
