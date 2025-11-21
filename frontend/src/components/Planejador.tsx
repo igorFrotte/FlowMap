@@ -824,70 +824,104 @@ export default function Planejador() {
 
   /* ------------------ SALVAR PLANEJAMENTO ------------------ */
   const salvarPlanejamento = () => {
-    if (backlog.length === 0 && backlogTotal.length === 0) {
-      let objs = plan.map((el, i) => ({
+    const todas = Object.values(disciplinas) as Disciplina[];
+
+    // Disciplinas já alocadas em algum período do plano atual
+    const idsPlanejadas = plan.flat().map((d) => d.id);
+
+    // Disciplinas já aprovadas
+    const idsAprovadas = todas.filter((d) => d.aprovado).map((d) => d.id);
+
+    // Se ainda houver coisa no backlog / backlogTotal, perguntar se quer salvar parcial
+    if (backlog.length > 0 || backlogTotal.length > 0) {
+      const confirma = window.confirm(
+        "Ainda há disciplinas não alocadas em períodos (backlog/indisponíveis). Deseja salvar o planejamento parcial assim mesmo?"
+      );
+      if (!confirma) return;
+    }
+
+    // Disciplinas que NÃO estão aprovadas e NÃO estão planejadas em nenhum período
+    const idsNaoPlanejadasENaoAprovadas = todas
+      .filter((d) => !d.aprovado && !idsPlanejadas.includes(d.id))
+      .map((d) => d.id);
+
+    // Objetos de períodos planejados
+    let objs: { idsDisciplinas: number[]; periodoPlan: number | null }[] =
+      plan.map((el, i) => ({
         idsDisciplinas: el.map((e) => e.id),
         periodoPlan: (i + 1) as number | null,
       }));
 
+    // Aprovadas: periodoPlan = null
+    if (idsAprovadas.length > 0) {
       objs.push({
         idsDisciplinas: idsAprovadas,
         periodoPlan: null,
       });
-
-      axiosService
-        .mudarPlanejamento(objs)
-        .then(() => {
-          alert("Planejamento salvo!");
-          setIniciado(false);
-          setBacklog([]);
-          setBacklogTotal([]);
-          setPlan([[]]);
-          setBloqueados([false]);
-          setCriticalPathIds([]);
-          axiosService
-            .mostrarDisciplinasDoAluno()
-            .then((r) => {
-              setDisciplinas(r.data);
-              const todas = Object.values(r.data) as Disciplina[];
-              const maxPeriodo = Math.max(
-                0,
-                ...todas
-                  .filter((d) => d.periodoplan)
-                  .map((d) => d.periodoplan ?? 0)
-              );
-              if (maxPeriodo > 0) {
-                let plano: Disciplina[][] = Array.from(
-                  { length: maxPeriodo },
-                  () => []
-                );
-                todas.forEach((d) => {
-                  if (d.periodoplan) {
-                    plano[d.periodoplan - 1].push(d);
-                  }
-                });
-                setPlanoAnterior(plano);
-              } else {
-                setPlanoAnterior([]);
-              }
-
-              // após recarregar, recalcula caminho crítico das não aprovadas
-              const todasNaoAprovadas = todas.filter(
-                (d) => !d.aprovado
-              ) as Disciplina[];
-              if (todasNaoAprovadas.length > 0) {
-                const caminho = calcularCaminhoCritico(todasNaoAprovadas);
-                setCriticalPathIds(caminho);
-              } else {
-                setCriticalPathIds([]);
-              }
-            })
-            .catch((e) => console.log(e.message));
-        })
-        .catch((e) => console.log(e.message));
-    } else {
-      alert("Não é possível salvar enquanto houver disciplinas no backlog.");
     }
+
+    // Não aprovadas e NÃO planejadas: também periodoPlan = null (planejamento parcial explícito)
+    if (idsNaoPlanejadasENaoAprovadas.length > 0) {
+      objs.push({
+        idsDisciplinas: idsNaoPlanejadasENaoAprovadas,
+        periodoPlan: null,
+      });
+    }
+
+    axiosService
+      .mudarPlanejamento(objs)
+      .then(() => {
+        alert("Planejamento salvo!");
+        setIniciado(false);
+        setBacklog([]);
+        setBacklogTotal([]);
+        setPlan([[]]);
+        setBloqueados([false]);
+        setCriticalPathIds([]);
+
+        // Recarrega as disciplinas do back para refletir o que foi salvo
+        axiosService
+          .mostrarDisciplinasDoAluno()
+          .then((r) => {
+            setDisciplinas(r.data);
+            const todasRecarregadas = Object.values(r.data) as Disciplina[];
+
+            const maxPeriodo = Math.max(
+              0,
+              ...todasRecarregadas
+                .filter((d) => d.periodoplan)
+                .map((d) => d.periodoplan ?? 0)
+            );
+
+            if (maxPeriodo > 0) {
+              let plano: Disciplina[][] = Array.from(
+                { length: maxPeriodo },
+                () => []
+              );
+              todasRecarregadas.forEach((d) => {
+                if (d.periodoplan) {
+                  plano[d.periodoplan - 1].push(d);
+                }
+              });
+              setPlanoAnterior(plano);
+            } else {
+              setPlanoAnterior([]);
+            }
+
+            // após recarregar, recalcula caminho crítico das não aprovadas
+            const todasNaoAprovadas = todasRecarregadas.filter(
+              (d) => !d.aprovado
+            ) as Disciplina[];
+            if (todasNaoAprovadas.length > 0) {
+              const caminho = calcularCaminhoCritico(todasNaoAprovadas);
+              setCriticalPathIds(caminho);
+            } else {
+              setCriticalPathIds([]);
+            }
+          })
+          .catch((e) => console.log(e.message));
+      })
+      .catch((e) => console.log(e.message));
   };
 
   /* ------------------ RENDERIZAÇÃO ------------------ */
