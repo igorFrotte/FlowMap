@@ -1,5 +1,4 @@
 import prisma from '../prisma/client.js';
-import { Prisma } from '../generated/prisma/index.js';
 import type { TxClient } from '../types/prisma.js';
 
 const authRepository = {

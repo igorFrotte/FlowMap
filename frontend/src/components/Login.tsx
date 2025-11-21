@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 import axiosService from "../services/axiosService";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import logo from "../assets/images/logoFlowMap.png";
 
 export default function Login() {
@@ -64,7 +64,7 @@ export default function Login() {
   return (
     <Container>
 
-      <img src={logo} alt="FlowMap Logo" /> 
+      <Link to="/"><img src={logo} alt="FlowMap Logo" /></Link>
 
       <Form onSubmit={handleSubmit}>
         <Title>Entrar</Title>
@@ -90,6 +90,11 @@ export default function Login() {
         <Button type="submit" disabled={loading}>
           {loading ? "Entrando..." : "Entrar"}
         </Button>
+        <Link to="/"><Button>Voltar</Button></Link>
+
+        <Redirect onClick={() => navigate("/cadastro")}>
+          Não possui conta? Faça seu cadastro
+        </Redirect>
       </Form>
     </Container>
   );
@@ -143,6 +148,8 @@ const Input = styled.input<{ $hasError?: boolean }>`
 `;
 
 const Button = styled.button`
+  margin-bottom: 15px;
+  width: 100%;
   padding: 0.75rem;
   background: #007bff;
   color: white;
@@ -162,4 +169,16 @@ const ErrorMsg = styled.p`
   font-size: 0.9rem;
   margin-bottom: 1rem;
   text-align: center;
+`;
+
+const Redirect = styled.p`
+  text-align: center;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: #007bff;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
 `;

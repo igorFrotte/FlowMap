@@ -472,7 +472,10 @@ export default function CursoForm() {
         ))}
 
         <Button type="button" onClick={adicionarPeriodo}>+ Adicionar Período</Button>
-        <Button type="button" onClick={salvarCurso}>Salvar Curso</Button>
+        <Buttons>
+          <Button type="button" onClick={() => navigate("/adm")}>Voltar</Button>
+          <Button type="button" onClick={salvarCurso}>Salvar Curso</Button>
+        </Buttons>
       </Form>
 
       {/* Modal de criação de universidade */}
@@ -537,7 +540,18 @@ const Select = styled.select`
   border: 1px solid #ccc;
   border-radius: 8px;
   font-size: 1rem;
+  width: 100%;
 `;
+
+const Buttons = styled.div`
+  display: flex;
+  gap: 10%;
+
+  button {
+    width: 45%;
+  }
+`;
+
 const Button = styled.button`
   padding: 0.75rem;
   background: #007bff;
@@ -664,3 +678,4 @@ const ModalContainer = styled.div`
   gap: 1rem;
   box-shadow: 0 5px 15px rgba(0,0,0,0.3);
 `;
+

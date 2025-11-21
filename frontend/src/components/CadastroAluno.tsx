@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import axiosService from "../services/axiosService";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function CadastroAluno() {
   const navigate = useNavigate();
@@ -146,6 +146,7 @@ export default function CadastroAluno() {
         <Button type="submit" disabled={loading}>
           {loading ? "Cadastrando..." : "Cadastrar"}
         </Button>
+        <Link to="/"><Button>Voltar</Button></Link>
 
         <Redirect onClick={() => navigate("/login")}>
           Já tem uma conta? Faça login
@@ -212,6 +213,8 @@ const Select = styled.select`
 `;
 
 const Button = styled.button`
+  margin-bottom: 15px;
+  width: 100%;
   padding: 0.75rem;
   background: #007bff;
   color: white;
