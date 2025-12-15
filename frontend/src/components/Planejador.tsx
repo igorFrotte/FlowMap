@@ -38,13 +38,13 @@ function calcularCaminhoCritico(disciplinas: Disciplina[]): number[] {
   if (disciplinas.length === 0) return [];
 
   // Mapa id -> disciplina
-  const map = new Map<number, Disciplina>();
-  disciplinas.forEach((d) => map.set(d.id, d));
+  const mapa = new Map<number, Disciplina>();
+  disciplinas.forEach((d) => mapa.set(d.id, d));
 
-  // Mapas de predecessores/sucessores e indegree
+  // Mapas de predecessores/sucessores e grau
   const predecessores = new Map<number, number[]>();
   const sucessores = new Map<number, number[]>();
-  const indegree = new Map<number, number>();
+  const grau = new Map<number, number>();
 
   disciplinas.forEach((d) => {
     // Requisitos explícitos da própria disciplina
@@ -55,7 +55,7 @@ function calcularCaminhoCritico(disciplinas: Disciplina[]): number[] {
     const predsRequisitosDosCorrequisitos: number[] = [];
 
     d.correquisitos?.forEach((cor) => {
-      const corDisc = map.get(cor.id);
+      const corDisc = mapa.get(cor.id);
       if (!corDisc) return;
 
       corDisc.requisitos.forEach((req) => {
@@ -86,10 +86,10 @@ function calcularCaminhoCritico(disciplinas: Disciplina[]): number[] {
       ...predsExplicitos,
       ...predsPeriodo,
     ]);
-    const preds = Array.from(predsSet).filter((id) => map.has(id));
+    const preds = Array.from(predsSet).filter((id) => mapa.has(id));
 
     predecessores.set(d.id, preds);
-    indegree.set(d.id, preds.length);
+    grau.set(d.id, preds.length);
 
     preds.forEach((p) => {
       if (!sucessores.has(p)) sucessores.set(p, []);
@@ -98,12 +98,12 @@ function calcularCaminhoCritico(disciplinas: Disciplina[]): number[] {
   });
 
   // Ordenação topológica (Kahn)
-  const indegreeWork = new Map<number, number>();
-  indegree.forEach((v, k) => indegreeWork.set(k, v));
+  const mapaGrau = new Map<number, number>();
+  grau.forEach((v, k) => mapaGrau.set(k, v));
 
   const fila: number[] = [];
-  indegreeWork.forEach((grau, id) => {
-    if (grau === 0) fila.push(id);
+  mapaGrau.forEach((g, id) => {
+    if (g === 0) fila.push(id);
   });
 
   const ordemTopologica: number[] = [];
@@ -112,8 +112,8 @@ function calcularCaminhoCritico(disciplinas: Disciplina[]): number[] {
     ordemTopologica.push(u);
     const sucs = sucessores.get(u) || [];
     sucs.forEach((v) => {
-      const g = (indegreeWork.get(v) || 0) - 1;
-      indegreeWork.set(v, g);
+      const g = (mapaGrau.get(v) || 0) - 1;
+      mapaGrau.set(v, g);
       if (g === 0) fila.push(v);
     });
   }
@@ -380,7 +380,8 @@ function DraggableItem({
   disabled = false,
   critical = false,
   difficulty,
-  show
+  show,
+  onDoubleClick
 }: {
   id: string;
   children: React.ReactNode;
@@ -388,6 +389,7 @@ function DraggableItem({
   critical?: boolean;
   difficulty?: number;
   show?: boolean;
+  onDoubleClick?: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id,
@@ -413,6 +415,7 @@ function DraggableItem({
       $critical={critical}
       $difficulty={difficulty}
       $show = {show}
+      onDoubleClick={onDoubleClick}
       {...(!disabled ? { ...listeners, ...attributes } : {})}
     >
       {children}
@@ -822,6 +825,32 @@ export default function Planejador() {
     }
   };
 
+  // ------------------ MOVER POR DUPLO CLIQUE ------------------
+  const moverParaProximoPeriodo = (disciplina: Disciplina) => {
+    const nextIndex = plan.length - 1; // sempre o último período atual
+
+    // se o último período estiver bloqueado, não permite mover
+    if (bloqueados[nextIndex]) return;
+
+    // copiar valores
+    let newBacklog = [...backlog];
+    let newPlan = plan.map((p) => [...p]);
+
+    // remover do backlog, se estiver lá
+    newBacklog = newBacklog.filter((d) => d.id !== disciplina.id);
+
+    // remover de períodos anteriores, se estiver
+    newPlan = newPlan.map((periodo) =>
+      periodo.filter((d) => d.id !== disciplina.id)
+    );
+
+    // adicionar no último período existente
+    newPlan[nextIndex].push(disciplina);
+
+    setBacklog(newBacklog);
+    setPlan(newPlan);
+  };
+
   /* ------------------ SALVAR PLANEJAMENTO ------------------ */
   const salvarPlanejamento = () => {
     const todas = Object.values(disciplinas) as Disciplina[];
@@ -1045,6 +1074,7 @@ export default function Planejador() {
                 critical={criticalPathIds.includes(d.id)}
                 difficulty={Number(d.dificuldade ?? 0)}
                 show={showDiff}
+                onDoubleClick={() => moverParaProximoPeriodo(d)}
               >
                 <span title={(() => {
                   let msg = "";

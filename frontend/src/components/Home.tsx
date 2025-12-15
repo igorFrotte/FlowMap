@@ -40,16 +40,19 @@ export default function Home() {
           </HeroText>
 
           <HeroCard>
-            <CardTitle>O que você encontra no FlowMap</CardTitle>
-            <CardList>
-              <li>Visualização do fluxo de disciplinas interativo.</li>
-              <li>Planejamento de períodos futuros.</li>
-              <li>Acompanhamento de aprovação em cada disciplina.</li>
-              <li>Rápido entendimento dos requisitos das matérias.</li>
-            </CardList>
-            <CardFooterText>
-              Tudo em um único lugar, acessível pelo navegador.
-            </CardFooterText>
+            <LogoMax src={logo} alt="Logo FlowMap" />
+            <div>
+              <CardTitle>O que você encontra no FlowMap</CardTitle>
+              <CardList>
+                <li>Visualização do fluxo de disciplinas interativo.</li>
+                <li>Planejamento de períodos futuros.</li>
+                <li>Acompanhamento de aprovação em cada disciplina.</li>
+                <li>Rápido entendimento dos requisitos das matérias.</li>
+              </CardList>
+              <CardFooterText>
+                Tudo em um único lugar, acessível pelo navegador.
+              </CardFooterText>
+            </div>
           </HeroCard>
         </HeroSection>
 
@@ -156,6 +159,12 @@ const Logo = styled.img`
   width: auto;
 `;
 
+const LogoMax = styled.img`
+  height: 200px;
+  width: auto;
+  border-radius: 10px;
+`;
+
 const BrandText = styled.span`
   font-size: 1.3rem;
   font-weight: 700;
@@ -193,8 +202,8 @@ const MainContent = styled.main`
 
 const HeroSection = styled.section`
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1.5fr);
-  gap: 32px;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1.3fr);
+  gap: 30px;
   align-items: center;
 
   @media (max-width: 900px) {
@@ -291,6 +300,10 @@ const HeroCard = styled.div`
   padding: 20px 22px;
   border: 1px solid #1e293b;
   box-shadow: 0 10px 25px rgba(15, 23, 42, 0.6);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  gap: 20px;
 `;
 
 const CardTitle = styled.h2`

@@ -11,6 +11,7 @@ courseRouter.post("/universidade",authMiddleware, authADMMiddleware,  courseCont
 courseRouter.get("/curso/:idCurso", authMiddleware, authADMMiddleware, courseController.buscarCursoPeloId );
 courseRouter.post("/curso", authMiddleware, authADMMiddleware, courseController.criarCurso);
 courseRouter.put("/curso/:idCurso", authMiddleware, authADMMiddleware, courseController.atualizarCurso);
+courseRouter.delete("/curso/:idCurso", authMiddleware, authADMMiddleware, courseController.removerCurso);
 
 
 export default courseRouter;

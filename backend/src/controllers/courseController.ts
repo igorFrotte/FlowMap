@@ -139,6 +139,10 @@ const courseController = {
     }
   },
 
+  removerCurso: async (req: Request, res: Response) => {
+    return res.sendStatus(STATUS_CODE.FORBIDDEN);
+  },  
+
 
 };
 

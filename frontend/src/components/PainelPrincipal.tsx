@@ -28,6 +28,10 @@ export default function PainelPrincipal() {
       .catch(err => console.error("Erro ao buscar cursos:", err));
   }, []);
 
+  const removerCurso = () => {
+    alert("remover");
+  };
+
   return (
     <Container>
       <Title>Cursos Gerenciados</Title>
@@ -45,11 +49,14 @@ export default function PainelPrincipal() {
               key={c.id}
               onClick={() => navigate(`/adm/curso/${c.id}`)}
             >
-              {c.nome}{" "}
-              <UniversidadeNome>
-                ({c.universidade?.nome || "Sem universidade"})
-              </UniversidadeNome>
-              <Alunos>{c._count?.alunos} alunos vinculados</Alunos>
+              <div>
+                {c.nome}{" "}
+                <UniversidadeNome>
+                  ({c.universidade?.nome || "Sem universidade"})
+                </UniversidadeNome>
+                <Alunos>{c._count?.alunos} alunos vinculados</Alunos>
+              </div>
+              <RemoveButton onClick={removerCurso}> ✕ </RemoveButton>
             </ItemLista>
           ))}
         </Lista>
@@ -101,6 +108,9 @@ const ItemLista = styled.li`
   cursor: pointer;
   font-size: 18px;
   transition: background 0.2s ease;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 
   &:hover {
     background-color: #f3f4f6;
@@ -120,4 +130,13 @@ const Alunos = styled.div`
   color: #2f3034;
   font-size: 16px;
   margin-top: 5px;
+`;
+
+const RemoveButton = styled.button`
+  background: transparent;
+  border: none;
+  color: #e63946;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1rem;
 `;
