@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
     restart: always
     ports:
-      - "3000:80"
+      - "4000:80"
     depends_on:
       - backend
 
@@ -17,8 +17,9 @@ services:
       dockerfile: Dockerfile
     restart: always
     ports:
-      - "5000:5000"
+      - "4050:4050"
     environment:
+      PORT: 4050
       DATABASE_URL: postgresql://flowmap_user:flowmap_senha@db:5432/flowmap
       TOKEN_SECRET: troque_essa_chave_por_uma_chave_segura
       ADMIN_NAME: Administrador
