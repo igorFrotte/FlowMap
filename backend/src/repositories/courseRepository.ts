@@ -1,4 +1,3 @@
-import type { PrismaClient } from '../generated/prisma/index.js';
 import prisma from '../prisma/client.js';
 import type { TxClient } from '../types/prisma.js';
 

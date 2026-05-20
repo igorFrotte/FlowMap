@@ -114,7 +114,7 @@ const vincularDisciplinasAosAlunos = async (tx: TxClient, alunosDoCurso: number[
 const vincularDisciplinasAoCurso = async (tx: TxClient, idCurso: number, periodos: PeriodoDTO[]) => {
   const dependenciasToCreate: { idDisciplinaDep: number; idTempDisciplinaReq: string }[] = [];
   const correqsToCreate: { idDisciplina: number; idTempDisciplinaCorreq: string }[] = [];
-  const novosIdsDisciplinas = [];
+  const novosIdsDisciplinas: number[] = [];
 
   const tempToRealId = new Map<string, number>();
 
